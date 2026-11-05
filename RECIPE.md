@@ -19,10 +19,12 @@ mods draw a compact rail below 160 px.
   window.
 - A 69 px footer (`workspace-chrome` with `props: {footer: true}`).
 - **Spaces** and the **Agents deck**, each a `weight: 1` block with `min: 90`.
-- Machine groups appear once a second machine is known: an 11 px header row
-  (26 px tall) with a server or monitor icon, the machine name, its state, and a
-  `+` to make a space there. A machine in `needs_login` shows **needs login** in
-  the theme's accent colour instead of the state word.
+- Each machine is one card, styled like the agent cards: `background`, 11 px
+  radius, a 1 px `border`, a 2xs shadow and the same inner top highlight. Its
+  30 px header holds a server or monitor icon, the machine name, its state, a
+  `+` to make a space there, the status dot and the fold chevron; the machine's
+  spaces are rows inside the card. A machine in `needs_login` shows **needs
+  login** in the theme's accent colour instead of the state word.
 - Below the spaces, **Agents** is a deck of cards, one per agent, 62 px tall
   (54 px visible: each card tucks 8 px under the one above). A card is
   `background` (the same colour as the Git and terminal panels, not a grey
@@ -149,11 +151,12 @@ cards. It uses `agents()`, `terminals()`, `panes()`,
 `.opacity()` and native `.spin()` / `.loop()` animation. `localStorage` keys:
 `changed`, `pins`, and `sections` (`{folded: [...], agents: [...]}`).
 
-**`mods/spaces-login`** (clone of the shipped `spaces`, v0.1.13): identical
-except `login(name)`, the `needs_login` branch in `grouped()`, and imports of
-`terminals, focused, notify`. It reads machine state from
-`hc machine ls --json` (`state`, `target`), which the clone already refreshes,
-and filters local terminals with `!t.machine && !String(t.address).includes("/")`.
+**`mods/spaces-login`** (clone of the shipped `spaces`, v0.1.13): the machine
+card wrapper (`card(head, body, t)`), the `needs_login` branch in `grouped()`,
+`login(name)`, and imports of `terminals, focused, notify`. It reads machine
+state from `hc machine ls --json` (`state`, `target`), which the clone already
+refreshes, and filters local terminals with `!t.machine &&
+!String(t.address).includes("/")`.
 
 Shipped pieces it leans on, all present in `~/.config/herdr-app/mods/`:
 `workspace-chrome` (`spinner.svg`, `server.svg`, `monitor.svg`,
@@ -172,10 +175,10 @@ state.
 
 The three clones are derived from Herdr's shipped mods (Apache-2.0). If Herdr
 updates `tabs`, `spaces` or `agents`, diff against
-`~/.config/herdr-app/mods/<name>` and re-apply the small changes above. The
-shipped `agents` clone keeps a renamed fold key (`machines.folded.v2` is in
-`spaces-login`; `agents-cards` uses `sections`) so an older saved fold state
-does not hide the new deck.
+`~/.config/herdr-app/mods/<name>` and re-apply the small changes above. Two
+storage keys differ from the shipped mods: `spaces-login` stores machine folds
+under `machines.folded.v2`, and `agents-cards` stores section folds under
+`sections`.
 
 ## Watch out
 

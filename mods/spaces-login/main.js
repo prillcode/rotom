@@ -64,7 +64,7 @@ export default class Spaces extends View {
     this.machines = [];
     this.reconnecting = JSON.parse(localStorage.getItem("machines.reconnecting") ?? "{}");
     for (const state of Object.values(this.reconnecting)) state.busy = false;
-    this.folded = new Set(JSON.parse(localStorage.getItem("machines.folded") ?? "[]"));
+    this.folded = new Set(JSON.parse(localStorage.getItem("machines.folded.v2") ?? "[]"));
     this.refreshMachines(cx);
     cx.timer.every(15000, cx => this.refreshMachines(cx));
     // `git status` walks the whole tree, on another machine a process there:
@@ -163,7 +163,7 @@ export default class Spaces extends View {
         if (machine.temporary) args.push("--temp");
         await ask(args);
         this.folded.delete(name);
-        localStorage.setItem("machines.folded", JSON.stringify([...this.folded]));
+        localStorage.setItem("machines.folded.v2", JSON.stringify([...this.folded]));
         delete this.reconnecting[name];
       } catch (e) {
         state.error = String(e.message ?? e);
@@ -350,11 +350,11 @@ export default class Spaces extends View {
       const connected = !m || machine?.state === "connected";
       const rebuilt = this.rebuilt(machine) || !!repair;
       const folded = this.folded.has(m);
-      const head = h_flex().id(`machine-${m ?? "local"}`).h(26).flex_none().px(collapsed ? 2 : 8).gap(7).items_center().text_size(11).text_color(t.dim)
+      const head = h_flex().id(`machine-${m ?? "local"}`).h(30).flex_none().px(collapsed ? 2 : 10).gap(7).items_center().text_size(11.5).text_color(t.dim)
         .cursor_pointer().hover(s => s.bg(t.hover))
         .on_click((_e, cx) => {
           folded ? this.folded.delete(m) : this.folded.add(m);
-          localStorage.setItem("machines.folded", JSON.stringify([...this.folded]));
+          localStorage.setItem("machines.folded.v2", JSON.stringify([...this.folded]));
           cx.notify();
         })
         .child(svg(`mods/workspace-chrome/${m ? "server" : "monitor"}.svg`).size(13).flex_none())
@@ -381,9 +381,28 @@ export default class Spaces extends View {
         .text_size(12).text_color(t.dim).hover(s => s.bg(t.hover).text_color(t.foreground))
         .on_click(() => run("space.new", { machine: m ?? "" }))
         .child(svg("mods/workspace-chrome/plus.svg").size(12)).when(!collapsed, el => el.child("New space there"));
-      if (!collapsed && rebuilt) return [head];
-      return [head, ...(folded ? [] : mine.length ? mine.map(draw) : [loading(m) ? loadingRow(m) : empty])];
+      const body = rebuilt || folded ? [] : mine.length ? mine.map(draw) : [loading(m) ? loadingRow(m) : empty];
+      if (collapsed) return [head, ...body];
+      return [this.card(head, body, t)];
     });
+  }
+
+  // One machine, one card: its header and the spaces inside it.
+  card(head, rows, t) {
+    return v_flex()
+      .w_full()
+      .flex_none()
+      .mb(6)
+      .relative()
+      .rounded(11)
+      .overflow_hidden()
+      .bg(t.background)
+      .border_1()
+      .border_color(t.border)
+      .shadow_2xs()
+      .child(div().absolute().top(0).left(0).right(0).h(1).bg(t.foreground).opacity(0.09))
+      .child(head)
+      .when(rows.length > 0, el => el.child(v_flex().px(2).pb(4).children(rows)));
   }
 
   // Only what's unusual, after the name: "herdr \u00b7 spike \u21912 \u21931". The repo or
