@@ -27,9 +27,8 @@ mods draw a compact rail below 160 px.
   (54 px visible: each card tucks 8 px under the one above). A card is
   `background` (the same colour as the Git and terminal panels, not a grey
   surface), 11 px radius, a 1 px `border`, a faint 2xs shadow and a 1 px inner
-  top highlight in `foreground` at 9% opacity, clipped by the rounded edge. A
-  3 px spine down the
-  left edge carries the status colour. The top line is the program icon, the
+  top highlight in `foreground` at 9% opacity, clipped by the rounded edge.
+  The top line is the program icon, the
   space name in semibold 12.5 px, an optional `· tab` detail in 10.5 px `dim`,
   and the status chip. The bottom line is the branch in 10 px `muted`, the
   machine name, and the time since the agent's state changed. On hover the
