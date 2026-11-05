@@ -225,7 +225,7 @@ export default class AgentCards extends View {
       .mt(i === 0 ? 2 : -8)
       .rounded(11)
       .overflow_hidden()
-      .bg(t.raised)
+      .bg(t.background)
       .border_1()
       .border_color(a.focused ? t.accent : hov ? t.input : t.border)
       .shadow_2xs()
@@ -261,7 +261,7 @@ export default class AgentCards extends View {
     const st = kidStatus(k, this.listed);
     const pic = icon(k.program, 11, t.foreground);
     return h_flex().id(`sub-${k.address}`).h(21).flex_none().ml(16).mr(2).mt(-4).px(7).gap(5).items_center()
-      .rounded(7).bg(t.surface).border_1().border_color(t.border)
+      .rounded(7).bg(t.background).border_1().border_color(t.border)
       .text_size(10.5).text_color(t.muted)
       .hover((el) => el.bg(t.hover).text_color(t.foreground))
       .on_click(() => this.peek(k.address))
