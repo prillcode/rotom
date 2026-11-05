@@ -55,7 +55,7 @@ pills with the program icon, name, a spinner while an agent works, a status dot
 when it is blocked or done, and a close button on the active one. `+` opens the
 `new-menu` popup (250 × 512). The active tab's panes are cards: 8 px gap, 10 px
 radius, 1 px `border`, 1 px `accent` border on focus, and a 30 px header drawn
-by the shipped `pane` mod, always visible.
+by the `pane-header` mod, always visible: program icon, the folder name (`~` at home), the branch, a machine badge for panes on another machine, and a Working / Needs you / Done state. The focused pane's header gets an `accent` bottom border. Split-right, split-down, zoom and close appear only on hover and act on that header's own pane.
 
 **Right panel** — a 368 px column (min 280, max 900) holding a stack of three
 panels, with **Git** active:
@@ -136,6 +136,15 @@ The layout is `layouts/rotom.json`: one row root (`theme: "ink"`,
   `git-graph`, `files` → mod `files`, `changes` → mod `changes`.
 
 The layout records `cloned_from: {name: "main", version: "0.1.13"}`.
+
+**`mods/pane-header`** (clone of the shipped `pane`, v0.1.13): `mod.json` is
+`{"place": "none", "title": "Pane header (Rotom)"}`, with the five `pane` SVGs
+copied beside it. The layout's `pane.header.content.mod` is `pane-header`. It
+finds its own pane with `panes().find(p => p.pane === props().pane)` and its
+machine from the `spaces()` entry whose `tabs` hold `p.tab` (falling back to a
+`machine/` id prefix) — never from `focused()`. It shows the folder basename,
+`p.branch`, the machine badge and `p.status`; the controls render only while
+hovered and pass `{ pane }` explicitly.
 
 **`mods/footer`** (new, small): a 34 px footer bar. Two buttons,
 11.8 px `muted` text (matching the status bar) that turns `foreground` over a

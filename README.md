@@ -15,12 +15,13 @@ Herdr writes `AGENTS.md` into `~/.config/herdr-app`; the short version:
 # from this folder
 mkdir -p ~/.config/herdr-app/layouts
 cp layouts/rotom.json ~/.config/herdr-app/layouts/
-cp -r mods/git-graph mods/tabs-git mods/spaces-login mods/agents-cards mods/footer ~/.config/herdr-app/mods/
+cp -r mods/git-graph mods/tabs-git mods/spaces-login mods/agents-cards mods/footer mods/pane-header ~/.config/herdr-app/mods/
 herdr-app check ~/.config/herdr-app/mods/git-graph
+herdr-app check ~/.config/herdr-app/mods/pane-header
 ```
 
 Then `ctrl+shift+l` (or the command palette) to switch to **rotom**. Nothing
-shipped is overwritten: the layout is a clone of `main`, and the two cloned mods
+shipped is overwritten: the layout is a clone of `main`, and the cloned mods
 are separate folders.
 
 The Git panel needs `git` on `PATH`. On another machine it runs `git` there.
