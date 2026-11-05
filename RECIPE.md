@@ -34,8 +34,8 @@ mods draw a compact rail below 160 px.
   appears only while a row is hovered, or on the shown space. A machine in
   `needs_login` shows **needs login** in the theme's accent colour instead of
   the state word.
-- Below the spaces, **Agents** is a deck of cards, one per agent, 62 px tall
-  (54 px visible: each card tucks 8 px under the one above). A card is
+- Below the spaces, **Agents** is a stack of cards, one per agent, 62 px tall
+  and 6 px apart — the same rhythm as the machine cards. A card is
   `background` (the same colour as the Git and terminal panels, not a grey
   surface), 11 px radius, a 1 px `border` and a faint 2xs shadow, clipped by
   the rounded edge.
@@ -214,6 +214,10 @@ under `machines.folded.v2`, and `agents-cards` stores section folds under
   more pushes the subject out. Widen `panel` rather than raising the cap.
 - **`git-graph` needs `git` on PATH** and caps the log at 300 commits. It makes
   no network calls and writes no files.
+- **Do not overlap the agent cards.** Tucking them under each other with
+  `mt(-8)` collapses the list's scroll extent: the panel then clips instead of
+  scrolling and no scrollbar appears. Keep them separated like the machine
+  cards, or wrap each in a fixed-height box.
 - **No repo is normal.** `~/dev` and any non-repo folder show "Not a git
   repository" by design.
 - **`localStorage` key `panels`** holds each space's last panel; deleting it

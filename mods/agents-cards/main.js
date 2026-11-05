@@ -218,11 +218,10 @@ export default class AgentCards extends View {
     const name = a.space_name || a.title || a.program?.name || a.address;
     return v_flex()
       .id(`card-${a.address}`)
-      .relative()
       .w_full()
       .h(62)
       .flex_none()
-      .mt(i === 0 ? 2 : -8)
+      .mt(i === 0 ? 2 : 6)
       .rounded(11)
       .overflow_hidden()
       .bg(t.background)
@@ -230,14 +229,14 @@ export default class AgentCards extends View {
       .border_color(a.focused ? t.accent : hov ? t.input : t.border)
       .shadow_2xs()
       .cursor_pointer()
+      .hover((s) => s.bg(t.hover))
       .on_hover((on, cx) => {
         if (on) this.hovered = a.address;
         else if (this.hovered === a.address) this.hovered = null;
         cx.notify();
       })
       .on_click(() => run("pane.focus", { pane: a.pane }))
-      .when(hov, (el) => el.child(div().absolute().top(0).left(0).size_full().bg(t.hover).opacity(0.3)))
-      .child(v_flex().relative().flex_1().min_w(0).pl(12).pr(9).pt(7)
+      .child(v_flex().flex_1().min_w(0).pl(12).pr(9).pt(7)
         .child(h_flex().w_full().gap(6).items_center()
           .when(Boolean(pic), (el) => el.child(div().flex_none().child(pic)))
           .child(div().flex_1().min_w(0).truncate().text_size(12.5).font_semibold().text_color(idle ? t.muted : t.foreground).child(name))
