@@ -20,16 +20,18 @@ mods draw a compact rail below 160 px.
 - A 69 px footer (`workspace-chrome` with `props: {footer: true}`).
 - **Spaces** and the **Agents deck**, each a `weight: 1` block with `min: 90`.
 - Each machine is one card, styled like the agent cards: `background`, 11 px
-  radius, a 1 px `border`, a 2xs shadow and the same inner top highlight. Its
-  30 px header holds a server or monitor icon, the machine name, its state, a
-  `+` to make a space there, the status dot and the fold chevron; the machine's
-  spaces are rows inside the card. A machine in `needs_login` shows **needs
-  login** in the theme's accent colour instead of the state word.
+  radius, a 1 px `border` and a 2xs shadow. Its 30 px header holds a server or
+  monitor icon, the machine name, its state, a `+` to make a space there, the
+  status dot and the fold chevron; the machine's spaces are rows inside the
+  card — a 16 px colour chip with the space's initial, the name in 12.5 px
+  `muted` (`foreground` for the shown space), then the repo/branch tail in
+  `dim`. A machine in `needs_login` shows **needs login** in the theme's accent
+  colour instead of the state word.
 - Below the spaces, **Agents** is a deck of cards, one per agent, 62 px tall
   (54 px visible: each card tucks 8 px under the one above). A card is
   `background` (the same colour as the Git and terminal panels, not a grey
-  surface), 11 px radius, a 1 px `border`, a faint 2xs shadow and a 1 px inner
-  top highlight in `foreground` at 9% opacity, clipped by the rounded edge.
+  surface), 11 px radius, a 1 px `border` and a faint 2xs shadow, clipped by
+  the rounded edge.
   The top line is the program icon, the space name in semibold 12.5 px filling
   the row, and the status chip. The bottom line is 10 px: the branch in
   `muted`, then the tab title after a `·`, the machine name, and the time since

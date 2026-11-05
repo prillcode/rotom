@@ -236,8 +236,6 @@ export default class AgentCards extends View {
         cx.notify();
       })
       .on_click(() => run("pane.focus", { pane: a.pane }))
-      // A hairline where the card catches the light.
-      .child(div().absolute().top(0).left(0).right(0).h(1).bg(t.foreground).opacity(0.09))
       .when(hov, (el) => el.child(div().absolute().top(0).left(0).size_full().bg(t.hover).opacity(0.3)))
       .child(v_flex().relative().flex_1().min_w(0).pl(12).pr(9).pt(7)
         .child(h_flex().w_full().gap(6).items_center()
