@@ -9,6 +9,9 @@ can actually see its password prompt.
 
 ## What you see
 
+The whole window uses Herdr's built-in `ink` theme (a cool slate blue), set on
+the layout root, so it looks the same whatever the app default is.
+
 Left to right, the same three columns as Herdr's `main` layout.
 
 **Sidebar** — 268 px, `chrome` background, not resizable; folds to a 44 px rail
@@ -111,8 +114,8 @@ panels, with **Git** active:
 
 ## Built from
 
-The layout is `layouts/rotom.json`: one row root (`titlebar: "none"`,
-`traffic_lights: [12, 16]`, `background: "canvas"`,
+The layout is `layouts/rotom.json`: one row root (`theme: "ink"`,
+`titlebar: "none"`, `traffic_lights: [12, 16]`, `background: "canvas"`,
 `terminal_padding: [14, 12]`, a 1 px `border` divider) with:
 
 - `sidebar` — column, `{px: 268}`, `min: 44`, `max: 480`, `background: "chrome"`,
