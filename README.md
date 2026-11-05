@@ -1,8 +1,8 @@
 # Rotom
 
 A Herdr app layout: the default window with a live git graph in the right panel,
-Files and Changes one click away, and a `needs login` link that runs the
-machine's login where you can see it.
+a deck of agent cards in the sidebar, Files and Changes one click away, and a
+`needs login` link that runs the machine's login where you can see it.
 
 See [RECIPE.md](RECIPE.md) for exactly what it is and how another agent can
 build it from scratch, and [preview.png](preview.png) for the window.
@@ -15,7 +15,7 @@ Herdr writes `AGENTS.md` into `~/.config/herdr-app`; the short version:
 # from this folder
 mkdir -p ~/.config/herdr-app/layouts
 cp layouts/rotom.json ~/.config/herdr-app/layouts/
-cp -r mods/git-graph mods/tabs-git mods/spaces-login ~/.config/herdr-app/mods/
+cp -r mods/git-graph mods/tabs-git mods/spaces-login mods/agents-cards ~/.config/herdr-app/mods/
 herdr-app check ~/.config/herdr-app/mods/git-graph
 ```
 

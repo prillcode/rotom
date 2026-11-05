@@ -1,8 +1,9 @@
 # Rotom
 
-Herdr's own window with a live git graph in the right-hand panel, a Files panel
-still one click away, and a `needs login` link in the sidebar that runs the
-machine's login command where you can actually see its password prompt.
+Herdr's own window with a live git graph in the right-hand panel, a deck of agent
+cards in the sidebar ordered by what needs you, a Files panel still one click
+away, and a `needs login` link that runs the machine's login command where you
+can actually see its password prompt.
 
 ![Rotom](preview.png)
 
@@ -16,12 +17,26 @@ mods draw a compact rail below 160 px.
 
 - A 46 px brand strip at the top (`workspace-chrome`), draggable to move the
   window.
-- **Spaces** and **Agents**, each a `weight: 1` block with `min: 90`.
-- A 69 px footer (`workspace-chrome` with `props: {footer: true})`.
+- A 69 px footer (`workspace-chrome` with `props: {footer: true}`).
+- **Spaces** and the **Agents deck**, each a `weight: 1` block with `min: 90`.
 - Machine groups appear once a second machine is known: an 11 px header row
   (26 px tall) with a server or monitor icon, the machine name, its state, and a
   `+` to make a space there. A machine in `needs_login` shows **needs login** in
   the theme's accent colour instead of the state word.
+- Below the spaces, **Agents** is a deck of cards, one per agent, 62 px tall
+  (54 px visible: each card tucks 8 px under the one above). A card is
+  `raised`, 11 px radius, a 1 px `border`, a faint 2xs shadow, clipped by the
+  rounded edge. A 3 px spine down the
+  left edge carries the status colour. The top line is the program icon, the
+  space name in semibold 12.5 px, an optional `· tab` detail in 10.5 px `dim`,
+  and the status chip. The bottom line is the branch in 10 px `muted`, the
+  machine name, and the time since the agent's state changed. On hover the
+  border turns `input`, a 30% `hover` wash shows, the pin button replaces the
+  duration; the focused card's border is `accent`.
+- Deck sections are small 9.5 px semibold headers, coloured by their status:
+  **NEED YOU**, **DONE**, **WORKING**, **IDLE**, each with a count and a fold
+  chevron. Idle starts folded. Sub-agents appear as 21 px mini-cards tucked
+  under their parent, indented 16 px, on a `surface` background.
 
 **Middle** — a 42 px tab bar (draggable) over the work area. Tabs are 29 px
 pills with the program icon, name, a spinner while an agent works, a status dot
@@ -67,6 +82,16 @@ panels, with **Git** active:
   rename, and right-clicked for the tab menu. The tab bar scrolls with the
   wheel. Tabs show the four agent states as in Herdr: **working** = spinner,
   **blocked** = status dot, **done** = status dot, **idle** = neither.
+- The **agents deck** is ordered by urgency, not by space: **NEED YOU**
+  (`blocked`) first, then **DONE**, then **WORKING**, then **IDLE**. A pin
+  keeps an agent at the top of its own group. Within a group, the most recent
+  state change wins, then `seq`. Clicking a card focuses that agent's pane;
+  clicking a sub-agent mini-card peeks at it. The chevron on the sub-agent
+  count folds that parent's helpers. Section headers fold their group and the
+  choice is saved in `localStorage` under `sections`; idle starts folded.
+  `agent.next` / `agent.prev` follow the deck's order.
+- Narrow the sidebar below 160 px and both mods draw their rail: one numbered
+  line per agent with just its status chip, and a `»` to restore the width.
 - In the sidebar, a machine that is `needs_login` gets a clickable **needs
   login** link (accent, `foreground` on hover). Clicking it finds a live local
   shell — the focused one, else any live shell in the active tab — and sends
@@ -87,7 +112,7 @@ The layout is `layouts/rotom.json`: one row root (`titlebar: "none"`,
 - `sidebar` — column, `{px: 268}`, `min: 44`, `max: 480`, `background: "chrome"`,
   `resizable: false`; children `brand` (block, `{px: 46}`, `window_drag: true`,
   mod `workspace-chrome`), `sidebar-lists` (column: `spaces` and `agents` blocks,
-  `{weight: 1}`, `min: 90`, mods `spaces-login` and `agents`), `sidebar-footer`
+  `{weight: 1}`, `min: 90`, mods `spaces-login` and `agents-cards`), `sidebar-footer`
   (block, `{px: 69}`, mod `workspace-chrome`, props `{footer: true}`).
 - `work` — column, `resizable: false`; children `tabs` (block, `{px: 42}`,
   `window_drag: true`, mod `tabs-git`), `work-body` (row, `padding: 8`,
@@ -114,6 +139,15 @@ and the Files button is joined by a Git button
 buttons on Linux and Windows (`win-min/max/restore/close.svg`) and leaves room
 for macOS traffic lights.
 
+**`mods/agents-cards`** (clone of the shipped `agents`, v0.1.13): the deck. It
+keeps the shipped mod's state tracking (`changed` timestamps), the done-to-idle
+hold, pin migration and sub-agent tree, and replaces the list with sections and
+cards. It uses `agents()`, `terminals()`, `panes()`,
+`spaces()`, `focused()`, `theme()`, `run("pane.focus" | "terminal.peek" |
+"terminal.pin")` and `setAgentOrder`, with `.absolute()` layers, `.shadow_2xs()`,
+`.opacity()` and native `.spin()` / `.loop()` animation. `localStorage` keys:
+`changed`, `pins`, and `sections` (`{folded: [...], agents: [...]}`).
+
 **`mods/spaces-login`** (clone of the shipped `spaces`, v0.1.13): identical
 except `login(name)`, the `needs_login` branch in `grouped()`, and imports of
 `terminals, focused, notify`. It reads machine state from
@@ -122,7 +156,7 @@ and filters local terminals with `!t.machine && !String(t.address).includes("/")
 
 Shipped pieces it leans on, all present in `~/.config/herdr-app/mods/`:
 `workspace-chrome` (`spinner.svg`, `server.svg`, `monitor.svg`,
-`chevron-down.svg`, `chevron-right.svg`, `plus.svg`), `agents`, `pane`
+`chevron-down.svg`, `chevron-right.svg`, `plus.svg`), `pane`
 (`close.svg`), `files` (`file.svg`), `changes` (`changes.svg`),
 `workspace-status`, `new-menu`, `menu`.
 
@@ -135,9 +169,12 @@ Programs it runs: `git` (the graph), `hc` (`hc send`, `hc machine ls --json`),
 and the shell commands the shipped `spaces` clone already runs for repo/branch
 state.
 
-Both clones are derived from Herdr's shipped mods (Apache-2.0). If Herdr updates
-`tabs` or `spaces`, diff against `~/.config/herdr-app/mods/tabs` and
-`~/.config/herdr-app/mods/spaces` and re-apply the small changes above.
+The three clones are derived from Herdr's shipped mods (Apache-2.0). If Herdr
+updates `tabs`, `spaces` or `agents`, diff against
+`~/.config/herdr-app/mods/<name>` and re-apply the small changes above. The
+shipped `agents` clone keeps a renamed fold key (`machines.folded.v2` is in
+`spaces-login`; `agents-cards` uses `sections`) so an older saved fold state
+does not hide the new deck.
 
 ## Watch out
 
