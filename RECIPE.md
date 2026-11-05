@@ -25,8 +25,9 @@ mods draw a compact rail below 160 px.
   the theme's accent colour instead of the state word.
 - Below the spaces, **Agents** is a deck of cards, one per agent, 62 px tall
   (54 px visible: each card tucks 8 px under the one above). A card is
-  `raised`, 11 px radius, a 1 px `border`, a faint 2xs shadow, clipped by the
-  rounded edge. A 3 px spine down the
+  `raised`, 11 px radius, a 1 px `border`, a faint 2xs shadow and a 1 px inner
+  top highlight in `foreground` at 9% opacity, clipped by the rounded edge. A
+  3 px spine down the
   left edge carries the status colour. The top line is the program icon, the
   space name in semibold 12.5 px, an optional `· tab` detail in 10.5 px `dim`,
   and the status chip. The bottom line is the branch in 10 px `muted`, the
