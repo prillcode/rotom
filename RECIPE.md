@@ -73,7 +73,8 @@ panels, with **Git** active:
 - **Files** and **Changes** — the shipped panels, unchanged, behind their own
   buttons in the tab bar.
 
-**Status bar** — 28 px `workspace-status` along the bottom.
+**Status bar** — 34 px `workspace-status` along the bottom, the same height as
+the sidebar footer so their top edges and dividers line up.
 
 ## How it behaves
 
@@ -127,7 +128,7 @@ The layout is `layouts/rotom.json`: one row root (`theme: "ink"`,
   (block, `{px: 34}`, mod `footer`).
 - `work` — column, `resizable: false`; children `tabs` (block, `{px: 42}`,
   `window_drag: true`, mod `tabs-git`), `work-body` (row, `padding: 8`,
-  `gap: 8`), `status` (block, `{px: 28}`, mod `workspace-status`).
+  `gap: 8`), `status` (block, `{px: 34}`, mod `workspace-status`).
 - `work-body` holds `main` (block, content `{tab: "active"}` with the pane frame
   above) and `panel` (column, `{px: 368}`, `min: 280`, `max: 900`) containing
   `panel-body` (stack, `active: "git"`) with three blocks: `git` → mod
