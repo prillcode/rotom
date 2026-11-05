@@ -27,6 +27,16 @@ function place(s, ps) {
 }
 const rowHeight = ({ tree }) => (tree ? 28 : 30);
 const where = (s, ps) => JSON.stringify([s.machine ?? null, place(s, ps)]);
+
+// One colour per machine, shared with agents-cards (keep the two copies identical): the
+// machines in name order take the palette in turn, so two machines never match until there
+// are more than six. This computer keeps the theme accent.
+const MACHINE_COLORS = ["#a78bfa", "#2dd4bf", "#fb923c", "#f472b6", "#a3e635", "#38bdf8"];
+function machineColor(t, name) {
+  if (!name) return t.accent;
+  const names = machines().map((m) => m.name).filter(Boolean).sort();
+  return MACHINE_COLORS[Math.max(0, names.indexOf(name)) % MACHINE_COLORS.length];
+}
 const base = (path) => path.replace(/\/+$/, "").split("/").pop();
 // Changes made outside Herdr (an editor's save, a commit in another app): looked
 // for this often, in repos the list shows, while the window is in front.
@@ -359,6 +369,7 @@ export default class Spaces extends View {
           cx.notify();
         })
         .child(svg(`mods/workspace-chrome/${m ? "server" : "monitor"}.svg`).size(13).flex_none())
+        .child(svg("mods/spaces-login/rotom.svg").size(14).flex_none().text_color(machineColor(t, m)))
         .when(!collapsed, el => el.child(div().flex_1().truncate().child(m ?? "This computer"))
           .when(!connected && !rebuilt, el => machine?.state === "needs_login"
             ? el.child(div().id(`machine-login-${m}`).flex_none().cursor_pointer().text_color(t.accent)

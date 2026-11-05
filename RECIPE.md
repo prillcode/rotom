@@ -1,5 +1,7 @@
 # Rotom
 
+*Named for the Pokémon that slips into a machine and makes it its own: every machine here gets its own colour, and a small plasma spark of that colour follows each agent home.* A fan homage, not affiliated with Nintendo, Game Freak or The Pokémon Company; the icon is an original drawing.
+
 Herdr's own window with a live git graph in the right-hand panel, a deck of agent
 cards in the sidebar ordered by what needs you, a Files panel still one click
 away, and a `needs login` link that runs the machine's login command where you
@@ -18,8 +20,10 @@ Left to right, the same three columns as Herdr's `main` layout.
 (76 px on macOS, room for the traffic lights) when dragged narrower, and its
 mods draw a compact rail below 160 px.
 
-- A 46 px brand strip at the top (`workspace-chrome`), draggable to move the
-  window.
+- A 46 px brand strip at the top (`brand-rotom`), draggable to move the
+  window: an 18 px accent Rotom icon, **Rotom** in semibold `accent` and
+  **(Herdr)** after it in 12 px `dim`; no Herdr logo. Then the search and
+  sidebar buttons as in `workspace-chrome`.
 - A 34 px footer (`footer`): **Settings** at the left edge and **Add machine**
   at the right edge, 11.8 px `muted` text (the status bar's size and colour)
   with a 13 px icon each. In the rail both centre as icons. Settings carries a
@@ -27,7 +31,7 @@ mods draw a compact rail below 160 px.
 - **Spaces** and the **Agents deck**, each a `weight: 1` block with `min: 90`.
 - Each machine is one card, styled like the agent cards: `background`, 11 px
   radius, a 1 px `border` and a 2xs shadow. Its 30 px header holds a server or
-  monitor icon, the machine name, its state, a `+` to make a space there, the
+  monitor icon, that machine's Rotom icon (14 px, see **Machine colours**), the machine name, its state, a `+` to make a space there, the
   status dot and the fold chevron; the machine's spaces are rows inside the
   card — the name in 12.5 px `muted` (`foreground` for the shown space), with
   `↑n`/`↓n` on the right when it is ahead or behind. The repo and branch text
@@ -136,6 +140,10 @@ The layout is `layouts/rotom.json`: one row root (`theme: "ink"`,
   `git-graph`, `files` → mod `files`, `changes` → mod `changes`.
 
 The layout records `cloned_from: {name: "main", version: "0.1.13"}`.
+
+**Machine colours.** `spaces-login` and `agents-cards` carry an identical `machineColor(t, name)`: this computer is `accent`; remote machines, sorted by name from `machines()`, take `#a78bfa #2dd4bf #fb923c #f472b6 #a3e635 #38bdf8` in turn (wrapping after six). Adding a machine that sorts earlier shifts the later ones. The Rotom icon (`rotom.svg`, 24-unit viewBox, 1.5 stroke, `currentColor`: orb, spark ticks, two eyes, mouth, zigzag tail) is drawn after each machine's server/monitor icon and, at 13 px, after the program icon on every agent card, coloured by the agent's machine (the part of `address` before `/`).
+
+**`mods/brand-rotom`** (clone of the shipped `workspace-chrome`, v0.1.13): identical except the Herdr logo and name are replaced by the Rotom icon and "Rotom" + "(Herdr)". It still reads the shipped `workspace-chrome` SVGs. The layout's `brand` block uses it.
 
 **`mods/pane-header`** (clone of the shipped `pane`, v0.1.13): `mod.json` is
 `{"place": "none", "title": "Pane header (Rotom)"}`, with the five `pane` SVGs

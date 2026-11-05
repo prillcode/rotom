@@ -15,7 +15,7 @@
           "id": "brand",
           "type": "block",
           "content": {
-            "mod": "workspace-chrome"
+            "mod": "brand-rotom"
           },
           "size": {
             "px": 46

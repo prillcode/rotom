@@ -3,7 +3,7 @@
 
 import { View, div, image, svg } from "gpui-kit";
 import { v_flex, h_flex } from "gpui-base";
-import { agents, terminals, panes, focused, spaces, run, theme, shared, setShared, setAgentOrder, window, layout } from "herdr";
+import { agents, machines, terminals, panes, focused, spaces, run, theme, shared, setShared, setAgentOrder, window, layout } from "herdr";
 
 function find(node, id) {
   if (node?.id === id) return node;
@@ -69,6 +69,16 @@ function duration(ms) {
   if (m < 60) return `${m}m`;
   const h = Math.floor(m / 60);
   return h < 24 ? `${h}h` : `${Math.floor(h / 24)}d`;
+}
+
+// One colour per machine, shared with spaces-login (keep the two copies identical): the
+// machines in name order take the palette in turn, so two machines never match until there
+// are more than six. This computer keeps the theme accent.
+const MACHINE_COLORS = ["#a78bfa", "#2dd4bf", "#fb923c", "#f472b6", "#a3e635", "#38bdf8"];
+function machineColor(t, name) {
+  if (!name) return t.accent;
+  const names = machines().map((m) => m.name).filter(Boolean).sort();
+  return MACHINE_COLORS[Math.max(0, names.indexOf(name)) % MACHINE_COLORS.length];
 }
 
 // The agent's icon from the app's program table: a one-color glyph or a picture.
@@ -239,6 +249,7 @@ export default class AgentCards extends View {
       .child(v_flex().flex_1().min_w(0).pl(12).pr(9).pt(7)
         .child(h_flex().w_full().gap(6).items_center()
           .when(Boolean(pic), (el) => el.child(div().flex_none().child(pic)))
+          .child(svg("mods/agents-cards/rotom.svg").size(13).flex_none().text_color(machineColor(t, machine)))
           .child(div().flex_1().min_w(0).truncate().text_size(12.5).font_semibold().text_color(idle ? t.muted : t.foreground).child(name))
           .child(this.statusChip(t, a)))
         .child(h_flex().w_full().gap(6).items_center().pt(4).text_size(10).text_color(t.dim)
