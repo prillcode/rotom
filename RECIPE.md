@@ -20,7 +20,9 @@ mods draw a compact rail below 160 px.
 
 - A 46 px brand strip at the top (`workspace-chrome`), draggable to move the
   window.
-- A 69 px footer (`workspace-chrome` with `props: {footer: true}`).
+- A 34 px footer (`footer`): **Settings** and **Add machine** side by side,
+  11 px `dim` text with a 13 px icon each, 6 px padding. In the rail only the
+  icons show. Settings carries a 5 px accent dot when an update is ready.
 - **Spaces** and the **Agents deck**, each a `weight: 1` block with `min: 90`.
 - Each machine is one card, styled like the agent cards: `background`, 11 px
   radius, a 1 px `border` and a 2xs shadow. Its 30 px header holds a server or
@@ -122,7 +124,7 @@ The layout is `layouts/rotom.json`: one row root (`theme: "ink"`,
   `resizable: false`; children `brand` (block, `{px: 46}`, `window_drag: true`,
   mod `workspace-chrome`), `sidebar-lists` (column: `spaces` and `agents` blocks,
   `{weight: 1}`, `min: 90`, mods `spaces-login` and `agents-cards`), `sidebar-footer`
-  (block, `{px: 69}`, mod `workspace-chrome`, props `{footer: true}`).
+  (block, `{px: 34}`, mod `footer`).
 - `work` — column, `resizable: false`; children `tabs` (block, `{px: 42}`,
   `window_drag: true`, mod `tabs-git`), `work-body` (row, `padding: 8`,
   `gap: 8`), `status` (block, `{px: 28}`, mod `workspace-status`).
@@ -132,6 +134,13 @@ The layout is `layouts/rotom.json`: one row root (`theme: "ink"`,
   `git-graph`, `files` → mod `files`, `changes` → mod `changes`.
 
 The layout records `cloned_from: {name: "main", version: "0.1.13"}`.
+
+**`mods/footer`** (new, small): a 34 px footer bar. Two flex-1 buttons, 11 px
+`dim` text that turns `foreground` over a `hover` background, each with a
+13 px icon from the shipped `workspace-chrome`: `settings.svg` for
+`run("app.settings")` (plus the update dot from `updates().app.ready`) and
+`plus.svg` for `run("mod.open", { name: "machine-add" })`. Below 160 px of
+sidebar it drops the labels and keeps the icons.
 
 **`mods/git-graph`** (new): `mod.json` is `{"place": "none", "title": "Git"}`.
 `main.js` imports `View, div` from `gpui-kit`; `v_flex, h_flex` from
