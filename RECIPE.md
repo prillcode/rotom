@@ -28,10 +28,10 @@ mods draw a compact rail below 160 px.
   `background` (the same colour as the Git and terminal panels, not a grey
   surface), 11 px radius, a 1 px `border`, a faint 2xs shadow and a 1 px inner
   top highlight in `foreground` at 9% opacity, clipped by the rounded edge.
-  The top line is the program icon, the
-  space name in semibold 12.5 px, an optional `· tab` detail in 10.5 px `dim`,
-  and the status chip. The bottom line is the branch in 10 px `muted`, the
-  machine name, and the time since the agent's state changed. On hover the
+  The top line is the program icon, the space name in semibold 12.5 px filling
+  the row, and the status chip. The bottom line is 10 px: the branch in
+  `muted`, then the tab title after a `·`, the machine name, and the time since
+  the agent's state changed. On hover the
   border turns `input`, a 30% `hover` wash shows, the pin button replaces the
   duration; the focused card's border is `accent`.
 - Deck sections are small 9.5 px semibold headers, coloured by their status:

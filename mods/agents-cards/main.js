@@ -243,12 +243,11 @@ export default class AgentCards extends View {
         .child(h_flex().w_full().gap(6).items_center()
           .when(Boolean(pic), (el) => el.child(div().flex_none().child(pic)))
           .child(div().flex_1().min_w(0).truncate().text_size(12.5).font_semibold().text_color(idle ? t.muted : t.foreground).child(name))
-          .when(Boolean(detail), (el) => el.child(div().flex_none().max_w(92).truncate().text_size(10.5).text_color(t.dim).child(`· ${detail}`)))
           .child(this.statusChip(t, a)))
         .child(h_flex().w_full().gap(6).items_center().pt(4).text_size(10).text_color(t.dim)
           .when(Boolean(branch), (el) => el.child(div().flex_none().max_w(96).truncate().text_color(t.muted).child(branch)))
+          .child(div().flex_1().min_w(0).truncate().child(detail ? (branch ? `· ${detail}` : detail) : ""))
           .when(Boolean(machine), (el) => el.child(div().flex_none().text_size(9.5).child(machine)))
-          .child(div().flex_1())
           .when(subs.length > 0, (el) => el.child(this.foldBtn(t, a, subs)))
           .when(hov, (el) => el.child(this.pinBtn(t, a)))
           .when(!hov && Boolean(when), (el) => el.child(div().flex_none().child(duration(now - when))))));
