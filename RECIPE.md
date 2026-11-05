@@ -20,10 +20,10 @@ mods draw a compact rail below 160 px.
 
 - A 46 px brand strip at the top (`workspace-chrome`), draggable to move the
   window.
-- A 34 px footer (`footer`): **Settings** and **Add machine** side by side,
-  11.8 px `muted` text (the status bar's size and colour) with a 13 px icon
-  each, 6 px padding. In the rail only the icons show. Settings carries a 5 px
-  accent dot when an update is ready.
+- A 34 px footer (`footer`): **Settings** at the left edge and **Add machine**
+  at the right edge, 11.8 px `muted` text (the status bar's size and colour)
+  with a 13 px icon each. In the rail both centre as icons. Settings carries a
+  5 px accent dot when an update is ready.
 - **Spaces** and the **Agents deck**, each a `weight: 1` block with `min: 90`.
 - Each machine is one card, styled like the agent cards: `background`, 11 px
   radius, a 1 px `border` and a 2xs shadow. Its 30 px header holds a server or
@@ -137,7 +137,7 @@ The layout is `layouts/rotom.json`: one row root (`theme: "ink"`,
 
 The layout records `cloned_from: {name: "main", version: "0.1.13"}`.
 
-**`mods/footer`** (new, small): a 34 px footer bar. Two flex-1 buttons,
+**`mods/footer`** (new, small): a 34 px footer bar. Two buttons,
 11.8 px `muted` text (matching the status bar) that turns `foreground` over a
 `hover` background, each with a
 13 px icon from the shipped `workspace-chrome`: `settings.svg` for
