@@ -18,7 +18,7 @@ const narrow = () => (find(layout(), "sidebar")?.size?.px ?? Infinity) < 160;
 export default class Footer extends View {
   button(t, id, icon, label, action) {
     return h_flex().id(id).flex_1().min_w(0).h_full().gap(5).items_center().justify_center()
-      .rounded(6).text_size(11).text_color(t.dim).cursor_pointer()
+      .rounded(6).text_size(11.8).text_color(t.muted).cursor_pointer()
       .hover((s) => s.bg(t.hover).text_color(t.foreground))
       .on_click(action)
       .child(svg(`mods/workspace-chrome/${icon}.svg`).size(13).flex_none())
