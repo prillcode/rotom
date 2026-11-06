@@ -7,11 +7,26 @@ const LIMIT = 300;
 const GRAPH = /^[\s|\\/*_\-]*/;
 const HEX = /^[0-9a-f]{7,40}/;
 
+let held = null;
+
 function location() {
   const space = spaces().find(s => s.active), f = focused();
   const pane = f?.pane ? panes().find(p => p.pane === f.pane) : null;
-  const on = f?.pane === null ? (f.terminal?.includes("/") ? f.terminal.split("/")[0] : null) : space?.machine ?? null;
-  return { cwd: pane?.cwd || f?.cwd || space?.folder, on };
+  const loc = { cwd: pane?.cwd || f?.cwd || space?.folder, on: f?.pane === null ? (f.terminal?.includes("/") ? f.terminal.split("/")[0] : null) : space?.machine ?? null };
+  // A mod pane (a file opened as a tab) takes the focus without having a folder:
+  // hold the last real one so opening a file doesn't reset the graph to the space's
+  // folder; with no memory yet, prefer a terminal pane in this tab over the fallback.
+  if (pane && !pane.cwd) {
+    if (held) return held;
+    const inTab = panes().find(p => p.tab === f?.tab && p.cwd)?.cwd || f?.cwd;
+    // A file-only tab has no terminal: the last tab of this space with one, in case.
+    const inSpace = [...(space?.tabs ?? [])].reverse().map(t => panes().find(p => p.tab === t.id && p.cwd)?.cwd).find(Boolean) || f?.cwd;
+    const cwd = inTab || inSpace;
+    if (cwd) return { cwd, on: space?.machine ?? null };
+    return loc;
+  }
+  if (loc.cwd) held = loc;
+  return loc;
 }
 const key = () => JSON.stringify(location());
 

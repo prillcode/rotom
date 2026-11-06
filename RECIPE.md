@@ -75,8 +75,9 @@ panels, with **Git** active:
   anything with a `/` in `dim`, other branches in `done`.
   With no repo it says "Not a git repository" in 12 px `dim`; while loading,
   "Loading commits…".
-- **Files** and **Changes** — the shipped panels, unchanged, behind their own
-  buttons in the tab bar.
+- **Files** and **Changes** — rotom's copies of the shipped panels, behind their
+  own buttons in the tab bar. Right-clicking a file in Files opens Rotom's file
+  menu; see **How it behaves**.
 
 **Status bar** — 34 px `workspace-status` along the bottom, the same height as
 the sidebar footer so their top edges and dividers line up.
@@ -119,6 +120,26 @@ the sidebar footer so their top edges and dividers line up.
   shows the stderr as an error toast rather than claiming success.
 - `ctrl-shift-l` cycles layouts; Herdr's own `main` is untouched and still
   available.
+- **Right-click a file in the Files panel** for Rotom's file menu (`file-menu`,
+  a popup): **View file contents** opens the file read-only as a tab in the
+  middle pane, **Open file for editing** opens an editable one (a Save button
+  in the tab's header writes the file; it appears once there are changes, and
+  the item is hidden for files on other machines, which stay read-only), and
+  **Copy file path** copies the path relative to the repo root with a
+  "Copied …" toast. Left-click still previews inline as before.
+- **Files, Git and Changes hold still while a file tab has the focus.** The
+  three panels normally follow the focused terminal's folder, but a file
+  opened from the menu takes the focus without a folder; instead of falling
+  back to the space's folder, `files-open`, `git-graph` and `changes-open`
+  hold the last real folder until a terminal pane is focused again. A fresh
+  copy with no folder on record (a file tab was already focused when it
+  loaded) falls back to a terminal in the focused tab, else the last tab of
+  the space with one.
+- The file tab is `file-view`: a borderless editor card with a 36 px header —
+  file name in semibold, the full path in 11 px `dim`, and Save when editable.
+  Read-only files still select and copy. Binary files (a `\0` in the first
+  1 MiB) and files over 400 KB open with a note instead (a large file falls
+  back to read-only).
 
 ## Built from
 
@@ -137,9 +158,49 @@ The layout is `layouts/rotom.json`: one row root (`theme: "ink"`,
 - `work-body` holds `main` (block, content `{tab: "active"}` with the pane frame
   above) and `panel` (column, `{px: 368}`, `min: 280`, `max: 900`) containing
   `panel-body` (stack, `active: "git"`) with three blocks: `git` → mod
-  `git-graph`, `files` → mod `files`, `changes` → mod `changes`.
+  `git-graph`, `files` → mod `files-open`, `changes` → mod `changes-open`.
 
 The layout records `cloned_from: {name: "main", version: "0.1.13"}`.
+
+**`mods/files-open`** (clone of the shipped `files`, v0.1.13): identical except
+a right mouse-down on a file row stops propagation and opens the `file-menu`
+popup with `props {tab: "file", target: {file, clip, on, name}}` (absolute
+path, repo-relative path, machine or null, base name). It also keeps the
+`git rev-parse --show-toplevel` answer from its refresh in `this.top` and
+normalizes separators (a `slash()` helper, forward slashes everywhere
+internally) so `clip` is right on Windows, where the pane's cwd is backslashed
+and git reports the toplevel slashed. Its asset paths read `mods/files-open/`.
+
+**`mods/file-menu`** (clone of the shipped `menu`, v0.1.13): adds a
+`case "file"` to `items()` with the three entries above. `choose()` handles
+them: `View file contents` and `Open file for editing` run
+`tab.new {name, mod: "file-view", props: {file, on, editable}}` (the edit tab
+is named `✎ <name>`); `Copy file path` calls `cx.write_to_clipboard(clip)` and
+posts a success `notify` toast. It reads `file-text.svg`, `square-pen.svg` and
+`files.svg` icons from the shipped `workspace-chrome`. Editable is offered
+only when `target.on` is null: the viewer writes local files only.
+
+**`mods/file-view`** (new): `mod.json` is `{"place": "none", "title": "File"}`.
+`main.js` imports `View, div` from `gpui-kit`; `v_flex, h_flex, Editor,
+EditorState` from `gpui-base`; and `props, readTextFile, writeTextFile, theme,
+settings, notify, nextCommand, window` from `herdr`. It reads `props().file`
+(the absolute path) and `props().on` (machine or null), loads the text with
+`readTextFile`, and builds an `EditorState` as the shipped preview does
+(language by extension, theme syntax colors, a 400 KB cap) with
+`readonly: !editable`. Editing: the header Save button (solid while dirty,
+`Saving…` while busy) calls `save(cx)`: `writeTextFile(file, value,
+original)` — the load-time text as `expected`, so a file changed underneath
+fails instead of clobbering — then clears the dirty flag and toasts. A
+`nextCommand()` loop (`cx.spawn` … `for (;;)`) accepts `"save"` so
+`"file-view.save"` can be bound in `keys.json` under `"mod:file-view"`.
+Paths are compared and stored with forward slashes (`shown()` renders them
+native for display on Windows).
+
+**`mods/changes-open`** (clone of the shipped `changes`, v0.1.13): identical
+except the focus fallback described above: a module-level `held` remembers the
+last `{cwd, on}` with a real folder, and when the focused pane is a mod pane
+(one with no `cwd`) `location()` returns the held one. `git-graph` has the
+same block in its `location()`.
 
 **Machine colours.** `spaces-login` and `agents-cards` carry an identical `machineColor(t, name)`: this computer is `accent`; remote machines, sorted by name from `machines()`, take `#a78bfa #2dd4bf #fb923c #f472b6 #a3e635 #38bdf8` in turn (wrapping after six). Adding a machine that sorts earlier shifts the later ones. The Rotom icon (`rotom.svg`, 24-unit viewBox, 1.5 stroke, `currentColor`: orb, spark ticks, two eyes, mouth, zigzag tail) is drawn after each machine's server/monitor icon and, at 13 px, after the program icon on every agent card, coloured by the agent's machine (the part of `address` before `/`).
 
@@ -195,9 +256,10 @@ refreshes, and filters local terminals with `!t.machine &&
 
 Shipped pieces it leans on, all present in `~/.config/herdr-app/mods/`:
 `workspace-chrome` (`spinner.svg`, `server.svg`, `monitor.svg`,
-`chevron-down.svg`, `chevron-right.svg`, `plus.svg`), `pane`
-(`close.svg`), `files` (`file.svg`), `changes` (`changes.svg`),
-`workspace-status`, `new-menu`, `menu`.
+`chevron-down.svg`, `chevron-right.svg`, `plus.svg`, `file-text.svg`,
+`square-pen.svg`, `files.svg`), `pane` (`close.svg`),
+`workspace-status`, `new-menu`, and `menu` (Herdr's own context menus;
+Rotom's file menu is its own clone).
 
 Commands it calls: `layout.select`, `layout.show`, `layout.hide`, `space.new`,
 `space.select`, `tab.new`, `tab.select`, `tab.move`, `tab.close`, `tab.rename`,
@@ -208,8 +270,8 @@ Programs it runs: `git` (the graph), `hc` (`hc send`, `hc machine ls --json`),
 and the shell commands the shipped `spaces` clone already runs for repo/branch
 state.
 
-The three clones are derived from Herdr's shipped mods (Apache-2.0). If Herdr
-updates `tabs`, `spaces` or `agents`, diff against
+The six clones are derived from Herdr's shipped mods (Apache-2.0). If Herdr
+updates `tabs`, `spaces`, `agents`, `files`, `changes` or `menu`, diff against
 `~/.config/herdr-app/mods/<name>` and re-apply the small changes above. Two
 storage keys differ from the shipped mods: `spaces-login` stores machine folds
 under `machines.folded.v2`, and `agents-cards` stores section folds under
@@ -237,16 +299,25 @@ under `machines.folded.v2`, and `agents-cards` stores section folds under
   cards, or wrap each in a fixed-height box.
 - **No repo is normal.** `~/dev` and any non-repo folder show "Not a git
   repository" by design.
+- **The file viewer edits local files only.** `writeTextFile` has no `on`, so
+  the menu hides **Open file for editing** when the file lives on another
+  machine; the tab there opens read-only. Editing a remote file means running
+  an editor on that machine.
+- **A file tab holds the panels.** While a `file-view` pane has the focus,
+  Files/Git/Changes keep the last terminal's folder instead of falling back to
+  the space's folder (on Windows often the home directory — the tree would
+  reset to `~`). They follow terminals again once one has the focus.
 - **`localStorage` key `panels`** holds each space's last panel; deleting it
   resets every space to closed.
 - **Clones do not update.** That is the trade for editing them.
-- **Mods are trusted code**, not sandboxed; these three run `git`, `hc`, and no
+- **Mods are trusted code**, not sandboxed; these run `git`, `hc`, and no
   `fetch`.
 
 ## Done when
 
 1. `herdr-app check ~/.config/herdr-app/mods/git-graph` (and `tabs-git`,
-   `spaces-login`) exits 0 with "check passed".
+   `spaces-login`, `files-open`, `file-menu`, `file-view`, `changes-open`)
+   exits 0 with "check passed".
 2. `herdr-app status` reports no errors from `layout`, `keys`, or these mods.
 3. The layout loads and the right panel shows a git graph in a repo — graph
    lanes, 7-character hashes, ref pills, subjects — and "Not a git repository"
@@ -258,5 +329,12 @@ under `machines.folded.v2`, and `agents-cards` stores section folds under
    link. Clicking it types `hc machine login <name>` into a visible local shell,
    or opens a split running it; the command never appears in a
    `machine/address` terminal.
-6. The window matches `preview.png` (allowing for different content in the
+6. Right-clicking a file in the Files panel opens a menu with **View file
+   contents**, **Open file for editing** (local files only) and **Copy file
+   path**. View and Edit each open a tab in the middle pane; the edit tab's
+   Save writes the file for real (check it changed on disk); Copy puts the
+   repo-relative path on the clipboard with a toast. The Files/Git/Changes
+   panels hold their folder while the file tab is focused and follow again
+   when a terminal pane is focused.
+7. The window matches `preview.png` (allowing for different content in the
    tabs, sidebar, and graph).
