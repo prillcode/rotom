@@ -1,6 +1,6 @@
 # Rotom
 
-*Named for the Pokémon that slips into a machine and makes it its own: every machine here gets its own colour, and a small plasma spark of that colour follows each agent home.* A fan homage, not affiliated with Nintendo, Game Freak or The Pokémon Company; the icon is an original drawing.
+A clean, professional layout. Each agent gets its own card with relevant info, and a custom title bar on each pane with directory, branch name, machine so you never get lost. A file explorer, git graph, and git changes pane are optional selections on the right. Named for the Pokémon that slips into a machine and makes it its own: every machine here gets its own color, and a small plasma spark of that color follows each agent home.
 
 Herdr's own window with a live git graph in the right-hand panel, a deck of agent
 cards in the sidebar ordered by what needs you, a Files panel still one click

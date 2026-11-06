@@ -1,8 +1,8 @@
-# Rotom
+# Rotom - Custom Herdr Layout
 
 *Named for the Pokémon that slips into a machine and makes it its own.* This
-layout does the same to your Herdr window: every machine gets its own colour,
-and a small plasma spark of that colour follows each agent back to the machine
+layout does the same to your Herdr window: every machine gets its own color,
+and a small plasma spark of that color follows each agent back to the machine
 it lives on.
 
 A Herdr app layout: the default window with a live git graph in the right panel,
