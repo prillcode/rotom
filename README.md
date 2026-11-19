@@ -10,6 +10,7 @@ a deck of agent cards in the sidebar, Files and Changes one click away, and a
 `needs login` link that runs the machine's login where you can see it.
 Right-click a file in the Files panel to **view it**, **edit it** (as a tab in
 the middle pane, with Save) or **copy its path** relative to the repo root.
+Markdown renders formatted, with a **Rendered / Source** switch.
 
 > Fan homage, not affiliated with or endorsed by Nintendo, Game Freak or The
 > Pokémon Company. The Rotom icon here is an original line drawing; no
@@ -28,8 +29,10 @@ build it from scratch, and [preview.png](preview.png) for the window.
   pane's repo, refreshing every 5 s (remote repos run git on their machine).
 - **File explorer** — browse the focused folder; right-click a file to **view
   it**, **edit it** as a tab in the middle pane (editable, with Save), or
-  **copy its path** relative to the repo root. Files, Git and Changes hold
-  their folder while a file tab is focused instead of jumping around.
+  **copy its path** relative to the repo root. Markdown opens formatted, with
+  a **Rendered / Source** switch, in the tab and the inline preview. Files, Git
+  and Changes hold their folder while a file tab is focused instead of jumping
+  around.
 - **Needs login** — machines that need login get a clickable link that runs
   the login where you can type the password.
 - **Rotom chrome** — custom brand bar, footer, pane headers (folder, branch,

@@ -1,8 +1,9 @@
 // A lazy file browser for the focused pane's folder, with bounded read-only previews.
 // Rotom's clone of the shipped `files`: left-click still previews inline, and a
 // right-click on a file opens `file-menu` (view / edit in a middle-pane tab, copy path).
+// Markdown previews render formatted, with a Rendered / Source switch.
 import { View, div, svg } from "gpui-kit";
-import { v_flex, h_flex, Editor, EditorState } from "gpui-base";
+import { v_flex, h_flex, Editor, EditorState, TextView } from "gpui-base";
 import { spaces, panes, focused, exec, readTextFile, watchFolder, theme, settings, window, openOverlay } from "herdr";
 
 function location() {
@@ -16,6 +17,7 @@ const key = (loc) => JSON.stringify(loc ?? location());
 // and git reports the toplevel slashed, so paths are only comparable normalized.
 const slash = (p) => String(p ?? "").replaceAll("\\", "/");
 const LANG = { ts: "js", tsx: "js", mts: "js", cts: "js", jsx: "js", mjs: "js", toml: "yaml", jsonc: "json", svelte: "html", vue: "html" };
+const MD = /\.(md|markdown|mdx)$/i;
 const PER_FOLDER = 500, TOTAL = 5000;
 
 async function directory(path, on) {
@@ -39,6 +41,7 @@ export default class Files extends View {
   init(_props, cx) {
     this.saved = new Map();
     this.entries = new Map(); this.folders = new Set(); this.pending = new Set(); this.marks = {};
+    this.markdown = false; this.showSource = false; this.text = null;
     this.refresh(cx);
     cx.timer.every(10000, cx => this.refresh(cx));
   }
@@ -148,6 +151,9 @@ export default class Files extends View {
 
   show(path, cx) {
     this.code?.release(); this.code = null; this.file = path; this.fileError = null;
+    this.markdown = Boolean(path && MD.test(path));
+    this.showSource = false;
+    this.text = null;
     if (!path || !cx) return;
     const context = this.context, root = this.root, on = this.on;
     cx.spawn(async cx => {
@@ -157,13 +163,28 @@ export default class Files extends View {
         if (text === null) { this.fileError = "This file is no longer available"; return; }
         if (text.includes("\0")) { this.fileError = "Binary file · no text preview"; return; }
         const t = theme(), ext = path.includes(".") ? path.split(".").pop() : "txt";
+        this.text = text.length > 400000 ? text.slice(0, 400000) + "\n… (file truncated)" : text;
         this.code = EditorState.new({ language: LANG[ext] ?? ext, readonly: true,
-          value: text.length > 400000 ? text.slice(0, 400000) + "\n… (file truncated)" : text,
+          value: this.text,
           font_family: settings().font_family, font_size: 12,
           syntax: { keyword: t.ansi5, string: t.ansi2, comment: t.dim, function: t.ansi4, type: t.ansi3, number: t.ansi1, constant: t.ansi6 } });
       } catch { if (this.file === path && this.current(context)) this.fileError = "Cannot preview this file (binary, too large, or unreadable)"; }
       finally { cx.notify(); }
     });
+  }
+
+  rendered() {
+    return this.markdown && !this.showSource && this.text !== null;
+  }
+
+  mode(t, label, selected) {
+    return h_flex()
+      .id(`files-preview-${label.toLowerCase()}`)
+      .h(20).flex_none().px(8).rounded(5).items_center().cursor_pointer().text_size(11)
+      .when(selected, el => el.bg(t.solid).text_color(t.solid_foreground))
+      .when(!selected, el => el.text_color(t.dim).hover(s => s.bg(t.hover).text_color(t.foreground)))
+      .on_click((_e, cx) => { this.showSource = label === "Source"; cx.notify(); })
+      .child(label);
   }
 
   rows(prefix, depth, out, t) {
@@ -202,6 +223,16 @@ export default class Files extends View {
       .when(!this.file, el => el.child(v_flex().id("files-tree").flex_1().min_h(0).overflow_y_scrollbar().p(6).children(this.rows("", 0, [], t))
         .when(Boolean(this.error) || !this.entries.get("")?.length, el => el.child(div().p(8).text_size(12).text_color(t.dim).child(this.error || (this.loading ? "Loading files…" : this.root ? "No files" : "No folder"))))
         .when(this.limited, el => el.child(div().p(8).text_size(11).text_color(t.dim).child("File list limited to 500 entries per folder and 5,000 total")))))
-      .when(Boolean(this.file), el => el.child(this.code ? Editor.new(this.code).flex_1().min_h(0) : div().p(12).text_color(t.dim).child(this.fileError || "Loading file…")));
+      .when(Boolean(this.file), el => el.child(v_flex().flex_1().min_h(0)
+        .when(this.markdown && this.code, el => el.child(
+          h_flex().h(30).flex_none().px(12).gap(6).items_center().border_b(1).border_color(t.border)
+            .child(div().flex_1())
+            .child(this.mode(t, "Rendered", !this.showSource))
+            .child(this.mode(t, "Source", this.showSource))))
+        .child(this.rendered()
+          ? TextView.markdown("files-preview-md", this.text).scrollable(true).px(14).py(12)
+          : this.code
+            ? Editor.new(this.code).flex_1().min_h(0)
+            : div().p(12).text_color(t.dim).child(this.fileError || "Loading file…"))));
   }
 }

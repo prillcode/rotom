@@ -126,7 +126,9 @@ the sidebar footer so their top edges and dividers line up.
   in the tab's header writes the file; it appears once there are changes, and
   the item is hidden for files on other machines, which stay read-only), and
   **Copy file path** copies the path relative to the repo root with a
-  "Copied …" toast. Left-click still previews inline as before.
+  "Copied …" toast. A Markdown file opens formatted, with a **Rendered /
+  Source** switch; an edit tab starts on the source. Left-click still previews
+  inline, and a Markdown preview there renders formatted too.
 - **Files, Git and Changes hold still while a file tab has the focus.** The
   three panels normally follow the focused terminal's folder, but a file
   opened from the menu takes the focus without a folder; instead of falling
@@ -136,10 +138,12 @@ the sidebar footer so their top edges and dividers line up.
   loaded) falls back to a terminal in the focused tab, else the last tab of
   the space with one.
 - The file tab is `file-view`: a borderless editor card with a 36 px header —
-  file name in semibold, the full path in 11 px `dim`, and Save when editable.
-  Read-only files still select and copy. Binary files (a `\0` in the first
-  1 MiB) and files over 400 KB open with a note instead (a large file falls
-  back to read-only).
+  file name in semibold, the full path in 11 px `dim`, a **Rendered / Source**
+  switch for Markdown, and Save when editable. A Markdown file in view mode
+  renders with `TextView.markdown` (headings, lists, tables, code blocks,
+  links; select and copy still work); Source shows the editor. Read-only files
+  still select and copy. Binary files (a `\0` in the first 1 MiB) and files
+  over 400 KB open with a note instead (a large file falls back to read-only).
 
 ## Built from
 
@@ -170,6 +174,10 @@ path, repo-relative path, machine or null, base name). It also keeps the
 normalizes separators (a `slash()` helper, forward slashes everywhere
 internally) so `clip` is right on Windows, where the pane's cwd is backslashed
 and git reports the toplevel slashed. Its asset paths read `mods/files-open/`.
+The left-click preview stays read-only: a Markdown file (`.md`, `.markdown`,
+`.mdx`) renders with `TextView.markdown("files-preview-md", text)
+.scrollable(true)` and a 30 px bar of Rendered / Source buttons above it, while
+every other file keeps the `Editor` preview.
 
 **`mods/file-menu`** (clone of the shipped `menu`, v0.1.13): adds a
 `case "file"` to `items()` with the three entries above. `choose()` handles
@@ -182,19 +190,25 @@ only when `target.on` is null: the viewer writes local files only.
 
 **`mods/file-view`** (new): `mod.json` is `{"place": "none", "title": "File"}`.
 `main.js` imports `View, div` from `gpui-kit`; `v_flex, h_flex, Editor,
-EditorState` from `gpui-base`; and `props, readTextFile, writeTextFile, theme,
-settings, notify, nextCommand, window` from `herdr`. It reads `props().file`
-(the absolute path) and `props().on` (machine or null), loads the text with
-`readTextFile`, and builds an `EditorState` as the shipped preview does
-(language by extension, theme syntax colors, a 400 KB cap) with
-`readonly: !editable`. Editing: the header Save button (solid while dirty,
-`Saving…` while busy) calls `save(cx)`: `writeTextFile(file, value,
-original)` — the load-time text as `expected`, so a file changed underneath
-fails instead of clobbering — then clears the dirty flag and toasts. A
-`nextCommand()` loop (`cx.spawn` … `for (;;)`) accepts `"save"` so
-`"file-view.save"` can be bound in `keys.json` under `"mod:file-view"`.
-Paths are compared and stored with forward slashes (`shown()` renders them
-native for display on Windows).
+EditorState, TextView` from `gpui-base`; and `props, readTextFile,
+writeTextFile, theme, settings, notify, nextCommand, window` from `herdr`. It
+reads `props().file` (the absolute path) and `props().on` (machine or null),
+loads the text with `readTextFile`, keeps it in `this.text`, and builds an
+`EditorState` as the shipped preview does (language by extension, theme syntax
+colors, a 400 KB cap) with `readonly: !editable`. Editing: the header Save
+button (solid while dirty, `Saving…` while busy) calls `save(cx)`:
+`writeTextFile(file, value, original)` — the load-time text as `expected`, so a
+file changed underneath fails instead of clobbering — then clears the dirty
+flag and toasts. A `nextCommand()` loop (`cx.spawn` … `for (;;)`) accepts
+`"save"` so `"file-view.save"` can be bound in `keys.json` under
+`"mod:file-view"`. A Markdown file (`.md`, `.markdown`, `.mdx`) in view mode
+starts rendered: the body is `TextView.markdown("file-view-md",
+sourceText()).scrollable(true)` inside `v_flex().flex_1().min_h(0)
+.overflow_hidden()`, instead of the `Editor`. The header shows a two-button
+Rendered / Source switch (the `mode()` helper) that flips `this.showSource`;
+an edit tab starts on Source and can preview unsaved changes because
+`sourceText()` reads `code.value()`. Paths are compared and stored with forward
+slashes (`shown()` renders them native for display on Windows).
 
 **`mods/changes-open`** (clone of the shipped `changes`, v0.1.13): identical
 except the focus fallback described above: a module-level `held` remembers the
