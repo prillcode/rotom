@@ -126,9 +126,9 @@ the sidebar footer so their top edges and dividers line up.
   in the tab's header writes the file; it appears once there are changes, and
   the item is hidden for files on other machines, which stay read-only), and
   **Copy file path** copies the path relative to the repo root with a
-  "Copied …" toast. A Markdown file opens formatted, with a **Rendered /
-  Source** switch; an edit tab starts on the source. Left-click still previews
-  inline, and a Markdown preview there renders formatted too.
+  "Copied …" toast. A Markdown file opens formatted, with **TUI / Rendered /
+  Source** switches; an edit tab starts on the source. Left-click still
+  previews inline, and a Markdown preview there has the same three views.
 - **Files, Git and Changes hold still while a file tab has the focus.** The
   three panels normally follow the focused terminal's folder, but a file
   opened from the menu takes the focus without a folder; instead of falling
@@ -138,12 +138,14 @@ the sidebar footer so their top edges and dividers line up.
   loaded) falls back to a terminal in the focused tab, else the last tab of
   the space with one.
 - The file tab is `file-view`: a borderless editor card with a 36 px header —
-  file name in semibold, the full path in 11 px `dim`, a **Rendered / Source**
-  switch for Markdown, and Save when editable. A Markdown file in view mode
-  renders with `TextView.markdown` (headings, lists, tables, code blocks,
-  links; select and copy still work); Source shows the editor. Read-only files
-  still select and copy. Binary files (a `\0` in the first 1 MiB) and files
-  over 400 KB open with a note instead (a large file falls back to read-only).
+  file name in semibold, the full path in 11 px `dim`, **TUI / Rendered /
+  Source** switches for Markdown, and Save when editable. A Markdown file in
+  view mode starts on Rendered (`TextView.markdown`: headings, lists, tables,
+  code blocks, links; select and copy still work); TUI is a monospace,
+  color-coded terminal rendering (`mods/file-view/tui.js`); Source is the
+  editor. Read-only files still select and copy. Binary files (a `\0` in the
+  first 1 MiB) and files over 400 KB open with a note instead (a large file
+  falls back to read-only).
 
 ## Built from
 
@@ -176,8 +178,10 @@ internally) so `clip` is right on Windows, where the pane's cwd is backslashed
 and git reports the toplevel slashed. Its asset paths read `mods/files-open/`.
 The left-click preview stays read-only: a Markdown file (`.md`, `.markdown`,
 `.mdx`) renders with `TextView.markdown("files-preview-md", text)
-.scrollable(true)` and a 30 px bar of Rendered / Source buttons above it, while
-every other file keeps the `Editor` preview.
+.scrollable(true)` and a 30 px bar of TUI / Rendered / Source buttons above it,
+while every other file keeps the `Editor` preview. TUI calls the shared
+`tui.js` renderer (a copy of `file-view`'s) and Source falls back to the
+`Editor`.
 
 **`mods/file-menu`** (clone of the shipped `menu`, v0.1.13): adds a
 `case "file"` to `items()` with the three entries above. `choose()` handles
@@ -190,11 +194,11 @@ only when `target.on` is null: the viewer writes local files only.
 
 **`mods/file-view`** (new): `mod.json` is `{"place": "none", "title": "File"}`.
 `main.js` imports `View, div` from `gpui-kit`; `v_flex, h_flex, Editor,
-EditorState, TextView` from `gpui-base`; and `props, readTextFile,
-writeTextFile, theme, settings, notify, nextCommand, window` from `herdr`. It
-reads `props().file` (the absolute path) and `props().on` (machine or null),
-loads the text with `readTextFile`, keeps it in `this.text`, and builds an
-`EditorState` as the shipped preview does (language by extension, theme syntax
+EditorState, TextView` from `gpui-base`; `props, readTextFile, writeTextFile,
+theme, settings, notify, nextCommand, window` from `herdr`; and `tuiMarkdown`
+from `./tui.js`. It reads `props().file` (the absolute path) and `props().on`
+(machine or null), loads the text with `readTextFile`, keeps it in `this.text`,
+and builds an `EditorState` as the shipped preview does (language by extension, theme syntax
 colors, a 400 KB cap) with `readonly: !editable`. Editing: the header Save
 button (solid while dirty, `Saving…` while busy) calls `save(cx)`:
 `writeTextFile(file, value, original)` — the load-time text as `expected`, so a
@@ -202,13 +206,29 @@ file changed underneath fails instead of clobbering — then clears the dirty
 flag and toasts. A `nextCommand()` loop (`cx.spawn` … `for (;;)`) accepts
 `"save"` so `"file-view.save"` can be bound in `keys.json` under
 `"mod:file-view"`. A Markdown file (`.md`, `.markdown`, `.mdx`) in view mode
-starts rendered: the body is `TextView.markdown("file-view-md",
+starts on Rendered: the body is `TextView.markdown("file-view-md",
 sourceText()).scrollable(true)` inside `v_flex().flex_1().min_h(0)
-.overflow_hidden()`, instead of the `Editor`. The header shows a two-button
-Rendered / Source switch (the `mode()` helper) that flips `this.showSource`;
-an edit tab starts on Source and can preview unsaved changes because
-`sourceText()` reads `code.value()`. Paths are compared and stored with forward
-slashes (`shown()` renders them native for display on Windows).
+.overflow_hidden()`, instead of the `Editor`. The header shows a three-button
+TUI / Rendered / Source switch (the `mode()` helper) that sets `this.view`;
+TUI paints `tuiMarkdown(sourceText(), theme(), mono, "file-view-tui")` there,
+and an edit tab starts on Source and can preview unsaved changes because
+`sourceText()` reads `code.value()`. `props.view` (`"tui"`, `"rendered"`,
+`"source"`) opens a tab on that view instead of the default. Paths are
+compared and stored with forward slashes (`shown()` renders them native for
+display on Windows).
+
+**`mods/file-view/tui.js`** (new, copied as `mods/files-open/tui.js`): the
+terminal-style Markdown renderer. It is a flat, line-based pass: YAML
+frontmatter as a code card; fenced code blocks (language label, green text,
+indented lines); `#`–`######` headings in accent/ANSI colors with the markers
+dim; bullets, numbered items and `[x]` / `[ ]` tasks in accent/green/yellow;
+blockquotes as a muted italic card with a left bar; tables with box-drawing
+columns; rules as 1 px `border` lines; and inline `code` (ANSI cyan on
+`raised`), bold, italic, strikethrough, links (ANSI blue, underlined), and
+`[image: alt]` placeholders. Words and spaces are separate flex items so
+a row wraps; everything uses `settings().font_family` and a 12.5 px/19 px
+rhythm. It caps a document at 100,000 characters or 2,000 lines and appends
+"… (TUI preview truncated)" so the non-virtualized render stays responsive.
 
 **`mods/changes-open`** (clone of the shipped `changes`, v0.1.13): identical
 except the focus fallback described above: a module-level `held` remembers the
@@ -317,6 +337,13 @@ under `machines.folded.v2`, and `agents-cards` stores section folds under
   the menu hides **Open file for editing** when the file lives on another
   machine; the tab there opens read-only. Editing a remote file means running
   an editor on that machine.
+- **TUI is a preview, not a full Markdown parser.** `tui.js` is a small,
+  line-based renderer: soft-wrapped paragraphs are joined and list
+  continuations stay under their marker, but HTML, setext headings, deeply
+  nested emphasis and some cross-line constructs can show their markers. It
+  caps at 100,000 characters / 2,000 lines and appends a truncation note;
+  Rendered handles the rest. Keep `mods/files-open/tui.js` identical to
+  `mods/file-view/tui.js`.
 - **A file tab holds the panels.** While a `file-view` pane has the focus,
   Files/Git/Changes keep the last terminal's folder instead of falling back to
   the space's folder (on Windows often the home directory — the tree would

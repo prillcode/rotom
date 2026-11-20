@@ -1,10 +1,11 @@
 // A lazy file browser for the focused pane's folder, with bounded read-only previews.
 // Rotom's clone of the shipped `files`: left-click still previews inline, and a
 // right-click on a file opens `file-menu` (view / edit in a middle-pane tab, copy path).
-// Markdown previews render formatted, with a Rendered / Source switch.
+// Markdown previews render formatted, with TUI / Rendered / Source switches.
 import { View, div, svg } from "gpui-kit";
 import { v_flex, h_flex, Editor, EditorState, TextView } from "gpui-base";
 import { spaces, panes, focused, exec, readTextFile, watchFolder, theme, settings, window, openOverlay } from "herdr";
+import { tuiMarkdown } from "./tui.js";
 
 function location() {
   const space = spaces().find(s => s.active), f = focused();
@@ -41,7 +42,7 @@ export default class Files extends View {
   init(_props, cx) {
     this.saved = new Map();
     this.entries = new Map(); this.folders = new Set(); this.pending = new Set(); this.marks = {};
-    this.markdown = false; this.showSource = false; this.text = null;
+    this.markdown = false; this.view = "source"; this.text = null;
     this.refresh(cx);
     cx.timer.every(10000, cx => this.refresh(cx));
   }
@@ -152,7 +153,7 @@ export default class Files extends View {
   show(path, cx) {
     this.code?.release(); this.code = null; this.file = path; this.fileError = null;
     this.markdown = Boolean(path && MD.test(path));
-    this.showSource = false;
+    this.view = this.markdown ? "rendered" : "source";
     this.text = null;
     if (!path || !cx) return;
     const context = this.context, root = this.root, on = this.on;
@@ -174,16 +175,21 @@ export default class Files extends View {
   }
 
   rendered() {
-    return this.markdown && !this.showSource && this.text !== null;
+    return this.markdown && this.view === "rendered" && this.text !== null;
   }
 
-  mode(t, label, selected) {
+  tui() {
+    return this.markdown && this.view === "tui" && this.text !== null;
+  }
+
+  mode(t, label) {
+    const selected = this.view === label.toLowerCase();
     return h_flex()
       .id(`files-preview-${label.toLowerCase()}`)
       .h(20).flex_none().px(8).rounded(5).items_center().cursor_pointer().text_size(11)
       .when(selected, el => el.bg(t.solid).text_color(t.solid_foreground))
       .when(!selected, el => el.text_color(t.dim).hover(s => s.bg(t.hover).text_color(t.foreground)))
-      .on_click((_e, cx) => { this.showSource = label === "Source"; cx.notify(); })
+      .on_click((_e, cx) => { this.view = label.toLowerCase(); cx.notify(); })
       .child(label);
   }
 
@@ -214,7 +220,7 @@ export default class Files extends View {
 
   render(cx) {
     if (key(this.located()) !== this.context?.key) this.refresh(cx);
-    const t = theme();
+    const t = theme(), mono = settings().font_family ?? "monospace";
     return v_flex().id("files").size_full().min_h(0).rounded(10).overflow_hidden().bg(t.background).border_1().border_color(t.border).text_color(t.foreground).text_size(13)
       .child(h_flex().h(42).flex_none().px(14).gap(8).items_center().border_b(1).border_color(t.border)
         .when(Boolean(this.file), el => el.child(div().id("files-back").w(20).cursor_pointer().text_color(t.muted).on_click((_e, cx) => { this.show(null); cx.notify(); }).child("←")))
@@ -227,12 +233,16 @@ export default class Files extends View {
         .when(this.markdown && this.code, el => el.child(
           h_flex().h(30).flex_none().px(12).gap(6).items_center().border_b(1).border_color(t.border)
             .child(div().flex_1())
-            .child(this.mode(t, "Rendered", !this.showSource))
-            .child(this.mode(t, "Source", this.showSource))))
-        .child(this.rendered()
-          ? TextView.markdown("files-preview-md", this.text).scrollable(true).px(14).py(12)
-          : this.code
-            ? Editor.new(this.code).flex_1().min_h(0)
-            : div().p(12).text_color(t.dim).child(this.fileError || "Loading file…"))));
+            .child(this.mode(t, "TUI"))
+            .child(this.mode(t, "Rendered"))
+            .child(this.mode(t, "Source"))))
+        .child(this.tui()
+          ? v_flex().flex_1().min_h(0).overflow_hidden()
+              .child(tuiMarkdown(this.text, t, mono, "files-preview-tui", 11.5, 12))
+          : this.rendered()
+            ? TextView.markdown("files-preview-md", this.text).scrollable(true).px(14).py(12)
+            : this.code
+              ? Editor.new(this.code).flex_1().min_h(0)
+              : div().p(12).text_color(t.dim).child(this.fileError || "Loading file…"))));
   }
 }
