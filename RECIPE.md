@@ -225,10 +225,14 @@ dim; bullets, numbered items and `[x]` / `[ ]` tasks in accent/green/yellow;
 blockquotes as a muted italic card with a left bar; tables with box-drawing
 columns; rules as 1 px `border` lines; and inline `code` (ANSI cyan on
 `raised`), bold, italic, strikethrough, links (ANSI blue, underlined), and
-`[image: alt]` placeholders. Words and spaces are separate flex items so
-a row wraps; everything uses `settings().font_family` and a 12.5 px/19 px
-rhythm. It caps a document at 100,000 characters or 2,000 lines and appends
-"… (TUI preview truncated)" so the non-virtualized render stays responsive.
+`[image: alt]` placeholders. Parsing stores blocks as data and a `list`
+(pairing a `Scrollbar` by name) builds only the visible ones, so the cost
+tracks the viewport, not the file. Short inline runs render as styled flex
+spans; a run over 200 characters becomes one plain text element with its
+markers stripped, because laying out hundreds of small styled elements can
+interrupt Herdr's render. Everything uses `settings().font_family` and a
+12.5 px/19 px rhythm. It caps a document at 100,000 characters or 2,000 lines
+and appends "… (TUI preview truncated)".
 
 **`mods/changes-open`** (clone of the shipped `changes`, v0.1.13): identical
 except the focus fallback described above: a module-level `held` remembers the
@@ -340,10 +344,12 @@ under `machines.folded.v2`, and `agents-cards` stores section folds under
 - **TUI is a preview, not a full Markdown parser.** `tui.js` is a small,
   line-based renderer: soft-wrapped paragraphs are joined and list
   continuations stay under their marker, but HTML, setext headings, deeply
-  nested emphasis and some cross-line constructs can show their markers. It
-  caps at 100,000 characters / 2,000 lines and appends a truncation note;
-  Rendered handles the rest. Keep `mods/files-open/tui.js` identical to
-  `mods/file-view/tui.js`.
+  nested emphasis and some cross-line constructs can show their markers. A
+  run longer than 200 characters drops to one plain styled text element (with
+  the markers removed), and blocks are virtualized with `list`, so a dense
+  document like this RECIPE still renders. It caps at 100,000 characters /
+  2,000 lines and appends a truncation note. Rendered handles the rest. Keep
+  `mods/files-open/tui.js` identical to `mods/file-view/tui.js`.
 - **A file tab holds the panels.** While a `file-view` pane has the focus,
   Files/Git/Changes keep the last terminal's folder instead of falling back to
   the space's folder (on Windows often the home directory — the tree would

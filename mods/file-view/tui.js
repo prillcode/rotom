@@ -1,10 +1,10 @@
 // A terminal-style Markdown view: monospace text with ANSI-ish colors from the
-// theme. It is read-only and flat (no virtual list), so the caller caps how much
-// of a large file it hands over.
-import { div } from "gpui-kit";
-import { v_flex, h_flex } from "gpui-base";
+// theme. Blocks are data; the list builds only the ones on screen, so a long
+// document costs about a viewport of elements rather than the whole file.
+import { div, list } from "gpui-kit";
+import { v_flex, h_flex, Scrollbar } from "gpui-base";
 
-const LIMIT = 100000, LINE_LIMIT = 2000;
+const LIMIT = 100000, LINE_LIMIT = 2000, PLAIN_AFTER = 200;
 
 // Inline Markdown: `code`, **bold**, *italic*, ~~strike~~, [text](url),
 // ![alt](src), <https://…>, and backslash escapes. Returns styled segments.
@@ -49,28 +49,43 @@ function tokens(text, style = {}, depth = 0) {
 
 function span(seg, t, mono) {
   const s = seg.style;
-  let el = div().whitespace_nowrap().flex_none().child(seg.text);
+  // One element per style run, not per word: a long run wraps inside its own
+  // width, and a row wraps between runs.
+  let el = div().min_w(0).max_w_full().child(seg.text.replace(/\t/g, "    "));
   if (s.bold) el = el.font_bold();
   if (s.italic) el = el.italic();
   if (s.strike) el = el.line_through();
   if (s.color) el = el.text_color(s.color);
   if (s.link) el = el.text_color(t.ansi4).underline();
   if (s.image) el = el.text_color(t.ansi5).italic();
-  if (s.code) el = el.font_family(mono).text_color(t.ansi6).bg(t.raised).px(3).rounded(3);
+  if (s.code) el = el.whitespace_nowrap().font_family(mono).text_color(t.ansi6).bg(t.raised).px(3).rounded(3);
   if (s.dim) el = el.text_color(t.dim);
   return el;
 }
 
-// Words and their spaces are separate items so a row can wrap between them.
+function plainText(s) {
+  return s.replace(/!\[([^\]]*)\]\([^)]*\)/g, "[image: $1]")
+    .replace(/\[([^\]]+)\]\([^)]*\)/g, "$1")
+    .replace(/`([^`]+)`/g, "$1")
+    .replace(/\*\*([^*]+)\*\*/g, "$1")
+    .replace(/__([^_]+)__/g, "$1")
+    .replace(/~~([^~]+)~~/g, "$1")
+    .replace(/(^|[^\w])\*([^*\n]+)\*(?!\w)/g, "$1$2")
+    .replace(/(^|[^\w])_([^_\n]+)_(?!\w)/g, "$1$2");
+}
+
+// Short runs keep inline colour. A long run is one text element: laying out
+// hundreds of styled fragments for a big document can interrupt the render.
 function inline(text, t, mono, base = {}) {
-  const parts = [];
-  for (const seg of tokens(text, base)) {
-    for (const chunk of seg.text.split(/(\s+)/)) {
-      if (!chunk) continue;
-      if (/^\s+$/.test(chunk)) parts.push(div().whitespace_nowrap().flex_none().child(chunk.replace(/\t/g, "    ")));
-      else parts.push(span({ text: chunk, style: seg.style }, t, mono));
-    }
+  if (text.length > PLAIN_AFTER) {
+    let el = div().min_w(0).max_w_full().child(plainText(text));
+    if (base.bold) el = el.font_bold();
+    if (base.italic) el = el.italic();
+    if (base.color) el = el.text_color(base.color);
+    return el;
   }
+  const parts = [];
+  for (const seg of tokens(text, base)) if (seg.text) parts.push(span(seg, t, mono));
   return h_flex().flex_wrap().items_baseline().min_w(0).children(parts);
 }
 
@@ -121,6 +136,32 @@ function tableBlock(rows, t, mono) {
   return v_flex().w_full().flex_none().my(4).gap(1).children(lines);
 }
 
+function blockElement(b, t, mono) {
+  if (b.kind === "space") return div().h(8).flex_none();
+  if (b.kind === "rule") return div().w_full().flex_none().h(1).my(6).bg(t.border);
+  if (b.kind === "note") return div().flex_none().text_size(11).text_color(t.dim).child(b.text);
+  if (b.kind === "code") return codeBlock(b.rows, b.lang, t, mono);
+  if (b.kind === "table") return tableBlock(b.rows, t, mono);
+  if (b.kind === "heading") {
+    const color = b.level === 1 ? t.accent : b.level === 2 ? t.ansi5 : b.level === 3 ? t.ansi4 : t.muted;
+    return h_flex().w_full().flex_none().items_baseline().mt(b.level <= 2 ? 10 : 6).mb(2)
+      .child(div().flex_none().font_bold().text_color(t.dim).child(`${"#".repeat(b.level)} `))
+      .child(inline(b.text, t, mono, { bold: true, color }).flex_1().min_w(0));
+  }
+  if (b.kind === "quote") {
+    return h_flex().w_full().flex_none().items_stretch().my(1)
+      .child(div().w(2).flex_none().bg(t.muted))
+      .child(div().flex_1().min_w(0).pl(10).child(inline(b.text, t, mono, { italic: true, color: t.muted })));
+  }
+  if (b.kind === "list") {
+    const color = b.tone === "done" ? t.ansi2 : b.tone === "todo" ? t.ansi3 : t.accent;
+    return h_flex().w_full().flex_none().items_baseline().pl(b.depth * 16).gap(6).my(1)
+      .child(div().flex_none().font_bold().text_color(color).child(b.marker))
+      .child(inline(b.text, t, mono).flex_1().min_w(0));
+  }
+  return inline(b.text, t, mono).w_full().flex_none().my(1);
+}
+
 const blockStart = (l) => !l.trim() || /^\s{0,3}#{1,6}\s+/.test(l) || /^\s*>/.test(l)
   || /^\s*([-*+]|\d+[.)])\s+/.test(l) || /^\s*(```+|~~~+)/.test(l)
   || /^\s*([-*_])\s*(?:\1\s*){2,}$/.test(l) || l.trim().startsWith("|");
@@ -134,14 +175,14 @@ export function tuiMarkdown(source, t, mono, id = "tui", size = 12.5, padding = 
 
   const blocks = [];
   let spaced = true;
-  const push = (el) => { blocks.push(el); spaced = false; };
-  const space = () => { if (!spaced) { blocks.push(div().h(8).flex_none()); spaced = true; } };
+  const push = (b) => { blocks.push(b); spaced = false; };
+  const space = () => { if (!spaced) { blocks.push({ kind: "space" }); spaced = true; } };
 
   let i = 0;
   if (lines[0]?.trim() === "---") {
     const end = lines.findIndex((l, j) => j > 0 && l.trim() === "---");
     if (end > 1 && end < 100 && lines.slice(1, end).some(l => /^\s*[\w.-]+\s*:/.test(l))) {
-      push(codeBlock(lines.slice(1, end), "frontmatter", t, mono));
+      push({ kind: "code", rows: lines.slice(1, end), lang: "frontmatter" });
       i = end + 1;
     }
   }
@@ -156,31 +197,25 @@ export function tuiMarkdown(source, t, mono, id = "tui", size = 12.5, padding = 
       i++;
       while (i < lines.length && !lines[i].trim().startsWith(mark)) body.push(lines[i++]);
       if (i < lines.length) i++;
-      push(codeBlock(body, lang, t, mono));
+      push({ kind: "code", rows: body, lang });
       continue;
     }
 
     const heading = /^\s{0,3}(#{1,6})\s+(.*)$/.exec(line);
     if (heading) {
-      const level = heading[1].length;
-      const color = level === 1 ? t.accent : level === 2 ? t.ansi5 : level === 3 ? t.ansi4 : t.muted;
-      push(h_flex().w_full().flex_none().items_baseline().mt(level <= 2 ? 10 : 6).mb(2)
-        .child(div().flex_none().font_bold().text_color(t.dim).child(`${"#".repeat(level)} `))
-        .child(inline(heading[2], t, mono, { bold: true, color }).flex_1().min_w(0)));
+      push({ kind: "heading", level: heading[1].length, text: heading[2] });
       i++; continue;
     }
 
     if (/^\s*>\s?/.test(line)) {
-      push(h_flex().w_full().flex_none().items_stretch().my(1)
-        .child(div().w(2).flex_none().bg(t.muted))
-        .child(div().flex_1().min_w(0).pl(10).child(inline(line.replace(/^\s*>\s?/, ""), t, mono, { italic: true, color: t.muted }))));
+      push({ kind: "quote", text: line.replace(/^\s*>\s?/, "") });
       i++; continue;
     }
 
-    const list = /^(\s*)([-*+]|\d+[.)])\s+(.*)$/.exec(line);
-    if (list) {
-      const depth = Math.min(8, Math.floor(list[1].replace(/\t/g, "    ").length / 2));
-      let marker = list[2], rest = list[3];
+    const item = /^(\s*)([-*+]|\d+[.)])\s+(.*)$/.exec(line);
+    if (item) {
+      const depth = Math.min(8, Math.floor(item[1].replace(/\t/g, "    ").length / 2));
+      let marker = item[2], rest = item[3], tone = null;
       // Soft-wrapped source lines belong to the item, not to a new paragraph.
       if (!/\s{2,}$/.test(line)) {
         while (i + 1 < lines.length && /^\s+\S/.test(lines[i + 1]) && !blockStart(lines[i + 1])) {
@@ -188,24 +223,23 @@ export function tuiMarkdown(source, t, mono, id = "tui", size = 12.5, padding = 
         }
       }
       const task = /^\[([ xX])\]\s+(.*)$/.exec(rest);
-      if (task) { marker = task[1].toLowerCase() === "x" ? "☑" : "☐"; rest = task[2]; }
-      else if (!/^\d/.test(marker)) marker = "•";
-      const color = task ? (task[1].toLowerCase() === "x" ? t.ansi2 : t.ansi3) : t.accent;
-      push(h_flex().w_full().flex_none().items_baseline().pl(depth * 16).gap(6).my(1)
-        .child(div().flex_none().font_bold().text_color(color).child(marker))
-        .child(inline(rest, t, mono).flex_1().min_w(0)));
+      if (task) {
+        tone = task[1].toLowerCase() === "x" ? "done" : "todo";
+        marker = tone === "done" ? "☑" : "☐"; rest = task[2];
+      } else if (!/^\d/.test(marker)) marker = "•";
+      push({ kind: "list", depth, marker, tone, text: rest });
       i++; continue;
     }
 
     if (line.trim().startsWith("|")) {
       const rows = [];
       while (i < lines.length && lines[i].trim().startsWith("|")) rows.push(lines[i++]);
-      push(tableBlock(rows, t, mono));
+      push({ kind: "table", rows });
       continue;
     }
 
     if (/^\s*([-*_])\s*(?:\1\s*){2,}$/.test(line)) {
-      push(div().w_full().flex_none().h(1).my(6).bg(t.border));
+      push({ kind: "rule" });
       i++; continue;
     }
 
@@ -215,14 +249,17 @@ export function tuiMarkdown(source, t, mono, id = "tui", size = 12.5, padding = 
     if (!/\s{2,}$/.test(line)) {
       while (j < lines.length && !blockStart(lines[j])) { para += " " + lines[j].trim(); j++; }
     }
-    push(inline(para, t, mono).w_full().flex_none().my(1));
+    push({ kind: "para", text: para });
     i = j;
   }
 
-  if (clipped) push(div().w_full().flex_none().mt(10).text_size(11).text_color(t.dim).child("… (TUI preview truncated)"));
-  if (!blocks.length) push(div().text_color(t.dim).child("Empty file"));
+  if (clipped) push({ kind: "note", text: "… (TUI preview truncated)" });
+  if (!blocks.length) push({ kind: "note", text: "Empty file" });
 
-  return v_flex().id(id).size_full().min_h(0).overflow_y_scrollbar()
-    .font_family(mono).text_size(size).line_height(`${Math.round(size * 1.55)}px`)
-    .text_color(t.foreground).p(padding).children(blocks);
+  const name = `${id}-list`;
+  return v_flex().id(id).size_full().min_h(0).relative()
+    .font_family(mono).text_size(size).line_height(`${Math.round(size * 1.55)}px`).text_color(t.foreground)
+    .child(v_flex().relative().flex_1().min_h(0).p(padding)
+      .child(list(name, blocks.length, (n) => String(n), (n) => blockElement(blocks[n], t, mono)).flex_1().min_h(0))
+      .child(Scrollbar.vertical(name).absolute().inset_0()));
 }
