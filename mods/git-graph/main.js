@@ -33,16 +33,17 @@ const key = () => JSON.stringify(location());
 function parse(line) {
   const graph = line.match(GRAPH)?.[0] ?? "";
   const rest = line.slice(graph.length);
-  const hash = rest.match(HEX)?.[0] ?? "";
-  if (!hash) return { graph: line, hash: "", refs: [], subject: "" };
-  const tail = rest.slice(hash.length);
-  const refs = tail.match(/^\s*\(([^)]*)\)/)?.[1];
-  const subject = (refs !== undefined ? tail.replace(/^\s*\([^)]*\)\s?/, "") : tail.replace(/^\s+/, ""));
+  // The log format is `%h\x1f%aL\x1f%d\x1f%s`: short SHA, author handle, refs, subject.
+  const fields = rest.split("\x1f");
+  const hash = fields[0]?.match(HEX)?.[0] ?? "";
+  if (!hash) return { graph: line, hash: "", handle: "", refs: [], subject: "" };
+  const refs = (fields[2] ?? "").trim().replace(/^\((.*)\)$/, "$1");
   return {
     graph,
     hash,
+    handle: fields[1] ?? "",
     refs: refs ? refs.split(",").map(r => r.trim()).filter(Boolean) : [],
-    subject,
+    subject: fields[3] ?? "",
   };
 }
 
@@ -87,7 +88,7 @@ export default class GitGraph extends View {
       }
       let out;
       try {
-        const r = await exec("git", ["log", "--graph", "--all", "--decorate", "--date-order", "--oneline", "-n", String(LIMIT)], { cwd: root, on: loc.on });
+        const r = await exec("git", ["log", "--graph", "--all", "--decorate", "--date-order", "-n", String(LIMIT), "--format=%h%x1f%aL%x1f%d%x1f%s"], { cwd: root, on: loc.on });
         if (r.code !== 0) throw new Error(r.stderr.trim() || `git log failed (${r.code})`);
         out = r.stdout;
       } catch (e) {
@@ -114,6 +115,7 @@ export default class GitGraph extends View {
     return h_flex().id(`gg-${i}`).h(17).flex_none().min_w(0).font_family(mono).text_size(12.2)
       .child(div().whitespace_nowrap().text_color(t.dim).child(p.graph))
       .when(Boolean(p.hash), el => el.child(div().whitespace_nowrap().text_color(t.accent).child(p.hash)))
+      .when(Boolean(p.handle), el => el.child(div().ml(6).flex_none().min_w(0).max_w(110).truncate().text_size(11).text_color(t.dim).child(`@${p.handle}`)))
       .when(p.refs.length > 0, el => el.child(h_flex().ml(5).gap(4).flex_none().children(
         p.refs.slice(0, 2).map(r => div().px(4).py(1).rounded(3).bg(t.raised).whitespace_nowrap()
           .text_color(refColor(r, t)).child(short(r)))

@@ -84,9 +84,12 @@ the sidebar footer so their top edges and dividers line up.
 
 ## How it behaves
 
-- The Git panel shows `git log --graph --all --decorate --date-order --oneline
-  -n 300` for the focused pane's folder, falling back to the focused terminal's
-  folder and then the active space's folder. On another machine it runs there.
+- The Git panel shows `git log --graph --all --decorate --date-order -n 300
+  --format=%h%x1f%aL%x1f%d%x1f%s` for the focused pane's folder, falling back
+  to the focused terminal's folder and then the active space's folder. Each
+  row is graph, short SHA, author handle (the email local part, `%aL`,
+  mailmap-aware, dim and capped at 110 px, shown as `@handle`), refs, subject.
+  On another machine it runs there.
   It asks `git rev-parse --show-toplevel` once per folder and caches the answer,
   re-asks when the focused folder changes, and refreshes the log every 5 s. A
   redraw happens only when the output, repo, or error actually changed.
@@ -266,8 +269,12 @@ sidebar it drops the labels and keeps the icons.
 `gpui-base`; and `spaces, panes, focused, exec, theme, settings` from `herdr`.
 It uses `exec("git", ["rev-parse", "--show-toplevel"], {cwd, on})` and
 `exec("git", ["log", …], {cwd, on})`, `theme()` colours, `settings().font_family`,
-and `cx.timer.every(5000, …)` with `cx.spawn` for the calls. `graph.svg` is a
-two-lane commit glyph in `currentColor`, tinted by the tab button.
+and `cx.timer.every(5000, …)` with `cx.spawn` for the calls. `parse()` splits
+the log's `%h%x1f%aL%x1f%d%x1f%s` fields on `\x1f`, giving graph, SHA, handle,
+refs and subject; the row paints `@<handle>` right after the SHA. The repo's
+`.mailmap` maps `aaron.prill@tylertech.com` to `prillcode@gmail.com`, so `%aL`
+gives one GitHub-style handle for both identities. `graph.svg` is a two-lane
+commit glyph in `currentColor`, tinted by the tab button.
 
 **`mods/tabs-git`** (clone of the shipped `tabs`, v0.1.13): identical except the
 enabled button list is local — `const enabled = ["git", "files", "changes"]` —
@@ -327,8 +334,9 @@ under `machines.folded.v2`, and `agents-cards` stores section folds under
   the active tab.
 - **Remote terminals are `machine/address`.** A bare `t3` is local; a remote one
   looks like `tyldevbox/t17`. Filter on the slash as well as `machine`.
-- **The panel is narrow.** Two ref pills plus `+N` is the limit at 280–368 px;
-  more pushes the subject out. Widen `panel` rather than raising the cap.
+- **The panel is narrow.** The handle column and two ref pills plus `+N` are
+  the limit at 280–368 px; more pushes the subject out. Widen `panel` rather
+  than raising the cap.
 - **`git-graph` needs `git` on PATH** and caps the log at 300 commits. It makes
   no network calls and writes no files.
 - **Do not overlap the agent cards.** Tucking them under each other with
