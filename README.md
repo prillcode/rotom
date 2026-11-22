@@ -27,7 +27,8 @@ build it from scratch, and [preview.png](preview.png) for the window.
   Idle), with pins and foldable sections.
 - **Live git graph** — the right panel runs `git log --graph` for the focused
   pane's repo, refreshing every 5 s (remote repos run git on their machine).
-  Each commit shows its short SHA, author handle, refs and subject.
+  Each commit shows its short SHA, author handle, refs and subject; hover a
+  row to read the full subject.
 - **File explorer** — browse the focused folder; right-click a file to **view
   it**, **edit it** as a tab in the middle pane (editable, with Save), or
   **copy its path** relative to the repo root. Markdown opens formatted, with

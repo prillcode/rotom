@@ -113,6 +113,8 @@ export default class GitGraph extends View {
     const p = parse(line);
     const short = (r) => (r.length > 13 ? `${r.slice(0, 12)}…` : r);
     return h_flex().id(`gg-${i}`).h(17).flex_none().min_w(0).font_family(mono).text_size(12.2)
+      // The subject is truncated to the panel width; the full first line is the tooltip.
+      .when(Boolean(p.subject), el => el.tooltip(p.subject))
       .child(div().whitespace_nowrap().text_color(t.dim).child(p.graph))
       .when(Boolean(p.hash), el => el.child(div().whitespace_nowrap().text_color(t.accent).child(p.hash)))
       .when(Boolean(p.handle), el => el.child(div().ml(6).flex_none().min_w(0).max_w(110).truncate().text_size(11).text_color(t.dim).child(`@${p.handle}`)))

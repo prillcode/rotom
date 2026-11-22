@@ -89,7 +89,8 @@ the sidebar footer so their top edges and dividers line up.
   to the focused terminal's folder and then the active space's folder. Each
   row is graph, short SHA, author handle (the email local part, `%aL`,
   mailmap-aware, dim and capped at 110 px, shown as `@handle`), refs, subject.
-  On another machine it runs there.
+  The subject is truncated to the panel width and a row's tooltip shows the
+  full first line on hover. On another machine it runs there.
   It asks `git rev-parse --show-toplevel` once per folder and caches the answer,
   re-asks when the focused folder changes, and refreshes the log every 5 s. A
   redraw happens only when the output, repo, or error actually changed.
@@ -271,8 +272,9 @@ It uses `exec("git", ["rev-parse", "--show-toplevel"], {cwd, on})` and
 `exec("git", ["log", …], {cwd, on})`, `theme()` colours, `settings().font_family`,
 and `cx.timer.every(5000, …)` with `cx.spawn` for the calls. `parse()` splits
 the log's `%h%x1f%aL%x1f%d%x1f%s` fields on `\x1f`, giving graph, SHA, handle,
-refs and subject; the row paints `@<handle>` right after the SHA. The handle
-is the author email local part; a `.mailmap` (in the repo, or a user
+refs and subject; the row paints `@<handle>` right after the SHA and puts the
+full subject in `.tooltip()`, so a truncated line still reads on hover. The
+handle is the author email local part; a `.mailmap` (in the repo, or a user
 `mailmap.file` outside it) can canonicalize aliases without changing this
 format. `graph.svg` is a two-lane commit glyph in `currentColor`, tinted by
 the tab button.
