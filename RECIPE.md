@@ -271,10 +271,11 @@ It uses `exec("git", ["rev-parse", "--show-toplevel"], {cwd, on})` and
 `exec("git", ["log", …], {cwd, on})`, `theme()` colours, `settings().font_family`,
 and `cx.timer.every(5000, …)` with `cx.spawn` for the calls. `parse()` splits
 the log's `%h%x1f%aL%x1f%d%x1f%s` fields on `\x1f`, giving graph, SHA, handle,
-refs and subject; the row paints `@<handle>` right after the SHA. The repo's
-`.mailmap` maps `aaron.prill@tylertech.com` to `prillcode@gmail.com`, so `%aL`
-gives one GitHub-style handle for both identities. `graph.svg` is a two-lane
-commit glyph in `currentColor`, tinted by the tab button.
+refs and subject; the row paints `@<handle>` right after the SHA. The handle
+is the author email local part; a `.mailmap` (in the repo, or a user
+`mailmap.file` outside it) can canonicalize aliases without changing this
+format. `graph.svg` is a two-lane commit glyph in `currentColor`, tinted by
+the tab button.
 
 **`mods/tabs-git`** (clone of the shipped `tabs`, v0.1.13): identical except the
 enabled button list is local — `const enabled = ["git", "files", "changes"]` —
