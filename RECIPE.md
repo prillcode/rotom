@@ -79,8 +79,10 @@ panels, with **Git** active:
   own buttons in the tab bar. Right-clicking a file in Files opens Rotom's file
   menu; see **How it behaves**.
 
-**Status bar** — 34 px `workspace-status` along the bottom, the same height as
-the sidebar footer so their top edges and dividers line up.
+**Status bar** — 34 px `status-rotom` along the bottom, the same height as the
+sidebar footer so their top edges and dividers line up. It shows the machine
+and branch, then **OpenSpec Changes** with a count when the focused pane's
+repo uses OpenSpec, then the agent count and the palette key hint.
 
 ## How it behaves
 
@@ -96,6 +98,15 @@ the sidebar footer so their top edges and dividers line up.
   redraw happens only when the output, repo, or error actually changed.
 - A folder that is not a repo is **not** an error state to fix: the panel says
   "Not a git repository".
+- The status bar counts OpenSpec changes for the focused pane's folder, with
+  the same hold as the Git panel when a file tab takes the focus without a
+  folder. It walks up to the nearest folder with `openspec/config.yaml`,
+  `openspec/specs` or `openspec/changes`, then counts the directories under
+  `openspec/changes` except `archive`. The names are the tooltip. With no
+  OpenSpec root the item is absent, so a repo that does not use OpenSpec looks
+  unchanged. It rechecks every 10 s. On another machine it runs
+  `openspec list --json` there and counts the active changes, so OpenSpec must
+  be installed on that machine.
 - The tab bar's **Git**, **Files**, and **Changes** buttons switch that stack.
   Clicking the active one closes the panel (`layout.hide panel`); clicking
   another selects it (`layout.select panel-body <id>`) and shows the panel. The
@@ -164,7 +175,7 @@ The layout is `layouts/rotom.json`: one row root (`theme: "ink"`,
   (block, `{px: 34}`, mod `footer`).
 - `work` — column, `resizable: false`; children `tabs` (block, `{px: 42}`,
   `window_drag: true`, mod `tabs-git`), `work-body` (row, `padding: 8`,
-  `gap: 8`), `status` (block, `{px: 34}`, mod `workspace-status`).
+  `gap: 8`), `status` (block, `{px: 34}`, mod `status-rotom`).
 - `work-body` holds `main` (block, content `{tab: "active"}` with the pane frame
   above) and `panel` (column, `{px: 368}`, `min: 280`, `max: 900`) containing
   `panel-body` (stack, `active: "git"`) with three blocks: `git` → mod
@@ -265,6 +276,25 @@ hovered and pass `{ pane }` explicitly.
 `plus.svg` for `run("mod.open", { name: "machine-add" })`. Below 160 px of
 sidebar it drops the labels and keeps the icons.
 
+**`mods/status-rotom`** (clone of the shipped `workspace-status`, v0.1.13):
+`mod.json` is `{"place": "none", "title": "Status (Rotom)"}`. It keeps the
+machine, branch, agent count and palette hint, and inserts **OpenSpec
+Changes** between the branch and the agent count. It imports `spaces, panes,
+focused, agents, theme, run, window, keys, exec, checking` from `herdr` and
+`* as fs from "fs/promises"`. `localRoot(cwd)` walks up to the nearest
+ancestor with an `openspec/config.yaml` file or `openspec/specs` /
+`openspec/changes` directory; `kind(path)` uses `fs.exists` then `fs.readdir`
+because this sandbox has no `stat`. `localNames(root)` reads
+`openspec/changes` and keeps its directories except `archive`.
+`remoteNames(cwd, on)` runs `exec("openspec", ["list", "--json"], {cwd, on})`
+and counts the entries in `changes`. `refresh(cx)` stores
+`{key, at, root, names}` for the focused pane's folder and machine (falling
+back to the space's folder, and memory for that space when a mod pane has no
+folder), ignores a result whose context has moved on, and runs again every
+10 s. The label uses the shipped
+`workspace-chrome/file-text.svg` at 13 px and a `raised` pill for the count;
+the tooltip lists the open change names.
+
 **`mods/git-graph`** (new): `mod.json` is `{"place": "none", "title": "Git"}`.
 `main.js` imports `View, div` from `gpui-kit`; `v_flex, h_flex` from
 `gpui-base`; and `spaces, panes, focused, exec, theme, settings` from `herdr`.
@@ -305,9 +335,8 @@ refreshes, and filters local terminals with `!t.machine &&
 Shipped pieces it leans on, all present in `~/.config/herdr-app/mods/`:
 `workspace-chrome` (`spinner.svg`, `server.svg`, `monitor.svg`,
 `chevron-down.svg`, `chevron-right.svg`, `plus.svg`, `file-text.svg`,
-`square-pen.svg`, `files.svg`), `pane` (`close.svg`),
-`workspace-status`, `new-menu`, and `menu` (Herdr's own context menus;
-Rotom's file menu is its own clone).
+`square-pen.svg`, `files.svg`), `pane` (`close.svg`), `new-menu`, and `menu`
+(Herdr's own context menus; Rotom's file menu is its own clone).
 
 Commands it calls: `layout.select`, `layout.show`, `layout.hide`, `space.new`,
 `space.select`, `tab.new`, `tab.select`, `tab.move`, `tab.close`, `tab.rename`,
@@ -318,8 +347,9 @@ Programs it runs: `git` (the graph), `hc` (`hc send`, `hc machine ls --json`),
 and the shell commands the shipped `spaces` clone already runs for repo/branch
 state.
 
-The six clones are derived from Herdr's shipped mods (Apache-2.0). If Herdr
-updates `tabs`, `spaces`, `agents`, `files`, `changes` or `menu`, diff against
+The cloned mods are derived from Herdr's shipped mods (Apache-2.0). If Herdr
+updates `tabs`, `spaces`, `agents`, `files`, `changes`, `menu`, `pane`,
+`workspace-chrome` or `workspace-status`, diff against
 `~/.config/herdr-app/mods/<name>` and re-apply the small changes above. Two
 storage keys differ from the shipped mods: `spaces-login` stores machine folds
 under `machines.folded.v2`, and `agents-cards` stores section folds under
@@ -342,6 +372,11 @@ under `machines.folded.v2`, and `agents-cards` stores section folds under
   than raising the cap.
 - **`git-graph` needs `git` on PATH** and caps the log at 300 commits. It makes
   no network calls and writes no files.
+- **OpenSpec detection is by folder, not Git.** `status-rotom` looks for
+  `openspec/config.yaml`, `openspec/specs` or `openspec/changes` walking up
+  from the active space's folder. An empty `openspec/` is not a root, and a
+  remote space needs `openspec` on that machine's PATH. It only reads; no
+  command runs for a local repo.
 - **Do not overlap the agent cards.** Tucking them under each other with
   `mt(-8)` collapses the list's scroll extent: the panel then clips instead of
   scrolling and no scrollbar appears. Keep them separated like the machine
