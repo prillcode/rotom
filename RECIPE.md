@@ -1,13 +1,14 @@
 # Rotom
 
-A clean, professional layout. Each agent gets its own card with relevant info, and a custom title bar on each pane with directory, branch name, machine so you never get lost. A file explorer, git graph, and git changes pane are optional selections on the right. Named for the Pokémon that slips into a machine and makes it its own: every machine here gets its own color, and a small plasma spark of that color follows each agent home.
+A clean, professional Herdr layout with a built-in OpenSpec browser: the status bar counts open changes, and a read-only TUI lists active and archived changes and specs, opening each `proposal.md` or `spec.md` as a rendered Markdown tab. Each agent gets its own card with relevant info, and a custom title bar on each pane with directory, branch name, and machine so you never get lost. A file explorer, git graph, and git changes pane are optional selections on the right. Named for the Pokémon that slips into a machine and makes it its own: every machine here gets its own color, and a small plasma spark of that color follows each agent home.
 
 Herdr's own window with a live git graph in the right-hand panel, a deck of agent
 cards in the sidebar ordered by what needs you, a Files panel still one click
-away, and a `needs login` link that runs the machine's login command where you
-can actually see its password prompt.
+away, a status bar with the live OpenSpec count and TUI, and a `needs login`
+link that runs the machine's login command where you can actually see its
+password prompt.
 
-![Rotom](preview.png)
+![Rotom with the OpenSpec TUI](preview-openspec.png)
 
 ## What you see
 
@@ -472,5 +473,5 @@ under `machines.folded.v2`, and `agents-cards` stores section folds under
    repo-relative path on the clipboard with a toast. The Files/Git/Changes
    panels hold their folder while the file tab is focused and follow again
    when a terminal pane is focused.
-7. The window matches `preview.png` (allowing for different content in the
-   tabs, sidebar, and graph).
+7. The window matches `preview-openspec.png` with the OpenSpec TUI open
+   (allowing for different content in the tabs, sidebar, and graph).

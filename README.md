@@ -5,37 +5,42 @@ layout does the same to your Herdr window: every machine gets its own color,
 and a small plasma spark of that color follows each agent back to the machine
 it lives on.
 
-A Herdr app layout: the default window with a live git graph in the right panel,
-a deck of agent cards in the sidebar, Files and Changes one click away, and a
-`needs login` link that runs the machine's login where you can see it.
+A Herdr app layout with a built-in OpenSpec browser: the status bar counts the
+focused repo's open changes, and one click opens a read-only TUI for active and
+archived changes and specs, then opens `proposal.md` or `spec.md` in a rendered
+Markdown tab. The rest is the default window: a live git graph, an agent deck
+ordered by what needs you, Files and Changes one click away, and a `needs login`
+link that runs the machine's login where you can see it.
+
 Right-click a file in the Files panel to **view it**, **edit it** (as a tab in
 the middle pane, with Save) or **copy its path** relative to the repo root.
 Markdown renders formatted, with a **TUI / Rendered / Source** switch.
+
+![Rotom with the OpenSpec TUI](preview-openspec.png)
 
 > Fan homage, not affiliated with or endorsed by Nintendo, Game Freak or The
 > Pokémon Company. The Rotom icon here is an original line drawing; no
 > Pokémon artwork is included.
 
 See [RECIPE.md](RECIPE.md) for exactly what it is and how another agent can
-build it from scratch, and [preview.png](preview.png) for the window.
+build it from scratch, and [preview-openspec.png](preview-openspec.png) for the
+window with the OpenSpec TUI open.
 
 ## Highlights
 
 - **Machine colors** — each machine gets its own color and Rotom spark; agents
   wear the color of the machine they live on.
+- **OpenSpec browser** — the status bar shows the focused repo's open-change
+  count and opens a read-only TUI with **Changes** (active and archived) and
+  **Specs** (requirement counts). Click a change or spec to read its
+  `proposal.md` or `spec.md` as a rendered Markdown tab. The item is hidden
+  when the repo has no OpenSpec root.
 - **Agents deck** — cards ordered by what needs you (Need you, Done, Working,
   Idle), with pins and foldable sections.
 - **Live git graph** — the right panel runs `git log --graph` for the focused
   pane's repo, refreshing every 5 s (remote repos run git on their machine).
   Each commit shows its short SHA, author handle, refs and subject; hover a
   row to read the full subject.
-- **OpenSpec changes** — the status bar counts the open changes in the focused
-  pane's repo (everything under `openspec/changes` except `archive`), with
-  their names on hover. Click it for a read-only TUI with **Changes** and
-  **Specs** tabs: active and archived changes with status labels, and every
-  spec with its requirement count. Click a change to read its `proposal.md`,
-  or a spec to read its `spec.md`, in a read-only Markdown tab. It hides
-  itself in repos that do not use OpenSpec.
 - **File explorer** — browse the focused folder; right-click a file to **view
   it**, **edit it** as a tab in the middle pane (editable, with Save), or
   **copy its path** relative to the repo root. Markdown opens formatted, with
