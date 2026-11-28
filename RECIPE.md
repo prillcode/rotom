@@ -114,9 +114,11 @@ the OpenSpec item opens `openspec-changes`, a read-only TUI dialog.
   `[archived]` label; the tab shows the total and the right side shows the
   split (`1 active · 29 archived`). The **Specs** tab lists spec ids with
   their requirement counts. `↑`/`↓` move through a tab (wrapping at the ends),
-  `←`/`→` or `Tab` switch tabs, `Home`/`End` jump, and `Esc` or `q` closes.
-  A selected row is highlighted but does nothing: the TUI is a viewer, not a
-  file opener.
+  `←`/`→` or `Tab` switch tabs, `Home`/`End` jump, `Enter` or a click opens
+  the selected row, and `Esc` or `q` closes. A change opens its
+  `proposal.md`; a spec opens its `spec.md`. The TUI closes and the file opens
+  read-only in a `file-view` tab (Markdown starts Rendered, with the usual TUI
+  / Rendered / Source switches).
 - The tab bar's **Git**, **Files**, and **Changes** buttons switch that stack.
   Clicking the active one closes the panel (`layout.hide panel`); clicking
   another selects it (`layout.select panel-body <id>`) and shows the panel. The
@@ -315,15 +317,20 @@ frame. State is `{tab, at, data, loading, error}`, a `ScrollHandle` for the
 list, and a focus handle for keys. The header is
 `OpenSpec :: <repo> [x]`; the tab bar shows `[ Changes N ]` and `Specs N`
 plus `A active · R archived` (or `N specs`); the footer shows
-`↑↓ scroll · ←→ tabs · esc/q close · read-only`. Rows are 24 px, selected by
-background and a `>` marker, and click only selects. `scan(cwd, on, root)`
-uses `localChanges` + `localSpecs` locally, or two parallel
-`exec("openspec", ...)` calls remotely. `localChanges` lists
+`↑↓ scroll · ←→ tabs · ↵ open · esc/q close · read-only`. Rows are 24 px,
+selected by background and a `>` marker. A click or Enter calls `open`:
+`closeOverlay(props().overlay)` then
+`run("tab.new", {name, mod: "file-view", props: {file, on, editable: false}})`.
+A change row opens `<root>/openspec/changes/<name>/proposal.md` (archived:
+`changes/archive/<name>/proposal.md`); a spec row opens
+`<root>/openspec/specs/<id>/spec.md`. The tab is named after the change or
+spec. `scan(cwd, on, root)` uses `localChanges` + `localSpecs` locally, or two
+parallel `exec("openspec", ...)` calls remotely. `localChanges` lists
 `openspec/changes` except `archive`, then `changes/archive`, newest archive
 name first. `localSpecs` reads each `openspec/specs/<id>/spec.md` and counts
 `### Requirement:` headings; remote `list --specs --json` supplies
-`id` and `requirementCount`. The dialog is read-only: it never writes or
-runs a command for a local repo.
+`id` and `requirementCount`. The dialog itself is read-only: it never writes,
+and opening a file depends on the installed `file-view` mod.
 
 **`mods/git-graph`** (new): `mod.json` is `{"place": "none", "title": "Git"}`.
 `main.js` imports `View, div` from `gpui-kit`; `v_flex, h_flex` from
@@ -409,6 +416,10 @@ under `machines.folded.v2`, and `agents-cards` stores section folds under
   machine's PATH. Both only read; no command runs for a local repo, and the
   local walk stops at the home folder because the mod sandbox cannot read
   above it.
+- **The OpenSpec TUI opens files through `file-view`.** A click or Enter
+  closes the dialog, then `tab.new` opens `proposal.md` or `spec.md` with
+  `editable: false`. Rotom already installs `file-view`; a stripped-down copy
+  without it leaves the rows unable to open their Markdown.
 - **Do not overlap the agent cards.** Tucking them under each other with
   `mt(-8)` collapses the list's scroll extent: the panel then clips instead of
   scrolling and no scrollbar appears. Keep them separated like the machine

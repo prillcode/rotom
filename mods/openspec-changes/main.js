@@ -2,7 +2,7 @@
 // Opened from the status bar's OpenSpec Changes count.
 import { View, div } from "gpui-kit";
 import { v_flex, h_flex, ScrollHandle } from "gpui-base";
-import { props, closeOverlay, exec, readTextFile, theme, settings, home } from "herdr";
+import { props, closeOverlay, exec, readTextFile, theme, settings, home, run } from "herdr";
 import * as fs from "fs/promises";
 
 const TABS = ["changes", "specs"];
@@ -176,6 +176,22 @@ export default class OpenSpecChanges extends View {
     cx.notify();
   }
 
+  open(index) {
+    const item = this.rows()[index];
+    if (!item || !this.data?.root) return;
+    this.at[this.tab] = index;
+    const root = String(this.data.root).replace(/\\/g, "/").replace(/\/+$/, "");
+    const file = this.tab === "changes"
+      ? `${root}/openspec/changes/${item.archived ? "archive/" : ""}${item.name}/proposal.md`
+      : `${root}/openspec/specs/${item.id}/spec.md`;
+    closeOverlay(props()?.overlay);
+    run("tab.new", {
+      name: this.tab === "changes" ? item.name : item.id,
+      mod: "file-view",
+      props: { file, on: this.on, editable: false },
+    });
+  }
+
   move(by, cx) {
     const count = this.rows().length;
     if (!count) return;
@@ -199,6 +215,9 @@ export default class OpenSpecChanges extends View {
       if (this.rows().length) this.select(0, cx);
     } else if (key === "end") {
       if (this.rows().length) this.select(this.rows().length - 1, cx);
+    } else if (key === "enter") {
+      if (!this.rows().length) return;
+      this.open(this.at[this.tab]);
     } else if (key === "q") {
       this.close();
     } else {
@@ -235,7 +254,7 @@ export default class OpenSpecChanges extends View {
       .when(on, (el) => el.bg(t.selected))
       .when(!on, (el) => el.hover((s) => s.bg(t.hover)))
       .cursor_pointer()
-      .on_click((_event, cx) => this.select(index, cx))
+      .on_click(() => this.open(index))
       .child(div().w(10).flex_none().text_color(on ? t.accent : t.dim).child(on ? ">" : " "))
       .child(div().flex_1().min_w(0).truncate().tooltip(tooltip ?? name).child(name))
       .child(right);
@@ -296,6 +315,7 @@ export default class OpenSpecChanges extends View {
       .child(h_flex().h(24).flex_none().px(10).gap(14).items_center().border_t(1).border_color(t.border).text_size(10.5).text_color(t.dim)
         .child("↑↓ scroll")
         .child("←→ tabs")
+        .child("↵ open")
         .child("esc/q close")
         .child(div().flex_1())
         .child("read-only"));

@@ -33,8 +33,9 @@ build it from scratch, and [preview.png](preview.png) for the window.
   pane's repo (everything under `openspec/changes` except `archive`), with
   their names on hover. Click it for a read-only TUI with **Changes** and
   **Specs** tabs: active and archived changes with status labels, and every
-  spec with its requirement count. It hides itself in repos that do not use
-  OpenSpec.
+  spec with its requirement count. Click a change to read its `proposal.md`,
+  or a spec to read its `spec.md`, in a read-only Markdown tab. It hides
+  itself in repos that do not use OpenSpec.
 - **File explorer** — browse the focused folder; right-click a file to **view
   it**, **edit it** as a tab in the middle pane (editable, with Save), or
   **copy its path** relative to the repo root. Markdown opens formatted, with
