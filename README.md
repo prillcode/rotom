@@ -31,7 +31,10 @@ build it from scratch, and [preview.png](preview.png) for the window.
   row to read the full subject.
 - **OpenSpec changes** — the status bar counts the open changes in the focused
   pane's repo (everything under `openspec/changes` except `archive`), with
-  their names on hover. It hides itself in repos that do not use OpenSpec.
+  their names on hover. Click it for a read-only TUI with **Changes** and
+  **Specs** tabs: active and archived changes with status labels, and every
+  spec with its requirement count. It hides itself in repos that do not use
+  OpenSpec.
 - **File explorer** — browse the focused folder; right-click a file to **view
   it**, **edit it** as a tab in the middle pane (editable, with Save), or
   **copy its path** relative to the repo root. Markdown opens formatted, with
@@ -52,12 +55,13 @@ Herdr writes `AGENTS.md` into `~/.config/herdr-app`; the short version:
 # from this folder
 mkdir -p ~/.config/herdr-app/layouts
 cp layouts/rotom.json ~/.config/herdr-app/layouts/
-cp -r mods/git-graph mods/tabs-git mods/spaces-login mods/agents-cards mods/footer mods/pane-header mods/brand-rotom mods/files-open mods/file-menu mods/file-view mods/changes-open mods/status-rotom ~/.config/herdr-app/mods/
+cp -r mods/git-graph mods/tabs-git mods/spaces-login mods/agents-cards mods/footer mods/pane-header mods/brand-rotom mods/files-open mods/file-menu mods/file-view mods/changes-open mods/status-rotom mods/openspec-changes ~/.config/herdr-app/mods/
 herdr-app check ~/.config/herdr-app/mods/git-graph
 herdr-app check ~/.config/herdr-app/mods/pane-header
 herdr-app check ~/.config/herdr-app/mods/brand-rotom
 herdr-app check ~/.config/herdr-app/mods/file-view
 herdr-app check ~/.config/herdr-app/mods/status-rotom
+herdr-app check ~/.config/herdr-app/mods/openspec-changes
 ```
 
 Then `ctrl+shift+l` (or the command palette) to switch to **rotom**. Nothing
@@ -65,6 +69,7 @@ shipped is overwritten: the layout is a clone of `main`, and the cloned mods
 are separate folders.
 
 The Git panel needs `git` on `PATH`. On another machine it runs `git` there.
-The OpenSpec count reads the repo's `openspec/` folder directly on this
-computer; on another machine it asks that machine's `openspec list --json`
-(so OpenSpec must be installed there).
+The OpenSpec count and TUI read the repo's `openspec/` folder directly on this
+computer; on another machine they ask that machine's `openspec` CLI
+(`list --json`, `list --all --json`, `list --specs --json`), so OpenSpec must
+be installed there.

@@ -2,7 +2,7 @@
 // OpenSpec changes in the active space's repo.
 import { View, div, svg } from "gpui-kit";
 import { h_flex } from "gpui-base";
-import { spaces, panes, focused, agents, theme, run, window, keys, exec, checking } from "herdr";
+import { spaces, panes, focused, agents, theme, run, window, keys, exec, openOverlay, checking, home } from "herdr";
 import * as fs from "fs/promises";
 
 const REFRESH_MS = 10000;
@@ -16,7 +16,13 @@ function parent(dir) {
 }
 
 async function kind(path) {
-  if (!(await fs.exists(path))) return null;
+  let found = false;
+  try {
+    found = await fs.exists(path);
+  } catch {
+    return null;
+  }
+  if (!found) return null;
   try {
     await fs.readdir(path);
     return "dir";
@@ -28,12 +34,14 @@ async function kind(path) {
 // OpenSpec marks a root with openspec/config.yaml, openspec/specs or
 // openspec/changes. Walk up from the space's folder, as the openspec CLI does.
 async function localRoot(cwd) {
+  const stop = slash(home());
   for (let dir = slash(cwd); ;) {
     const root = dir === "/" ? "" : dir;
     if (await kind(`${root}/openspec`) === "dir"
       && ((await kind(`${root}/openspec/config.yaml`)) === "file"
         || (await kind(`${root}/openspec/changes`)) === "dir"
         || (await kind(`${root}/openspec/specs`)) === "dir")) return dir;
+    if (dir === stop) return null;
     const up = parent(dir);
     if (!up) return null;
     dir = up;
@@ -142,6 +150,18 @@ export default class StatusRotom extends View {
     const { names } = this.state;
     return h_flex().id("status-openspec").gap(6).items_center()
       .when(names.length > 0, (el) => el.tooltip(names.join("\n")))
+      .cursor_pointer().hover((s) => s.text_color(t.foreground))
+      .on_click(() => {
+        const now = context();
+        openOverlay({
+          mod: "openspec-changes",
+          kind: "dialog",
+          frame: "none",
+          width: 640,
+          height: 440,
+          props: { cwd: now.cwd, on: now.on },
+        });
+      })
       .child(svg("mods/workspace-chrome/file-text.svg").size(13).flex_none())
       .child(div().whitespace_nowrap().child("OpenSpec Changes"))
       .child(div().px(5).py(1).rounded(4).bg(t.raised).text_size(10.5).text_color(t.foreground).child(String(names.length)));

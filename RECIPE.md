@@ -82,7 +82,8 @@ panels, with **Git** active:
 **Status bar** — 34 px `status-rotom` along the bottom, the same height as the
 sidebar footer so their top edges and dividers line up. It shows the machine
 and branch, then **OpenSpec Changes** with a count when the focused pane's
-repo uses OpenSpec, then the agent count and the palette key hint.
+repo uses OpenSpec, then the agent count and the palette key hint. Clicking
+the OpenSpec item opens `openspec-changes`, a read-only TUI dialog.
 
 ## How it behaves
 
@@ -107,6 +108,15 @@ repo uses OpenSpec, then the agent count and the palette key hint.
   unchanged. It rechecks every 10 s. On another machine it runs
   `openspec list --json` there and counts the active changes, so OpenSpec must
   be installed on that machine.
+- Clicking the OpenSpec count opens a frameless, monospace TUI dialog
+  (`openspec-changes`, 640 × 440), read-only. Its **Changes** tab lists active
+  changes first, then archived changes, each with an `[active]` or
+  `[archived]` label; the tab shows the total and the right side shows the
+  split (`1 active · 29 archived`). The **Specs** tab lists spec ids with
+  their requirement counts. `↑`/`↓` move through a tab (wrapping at the ends),
+  `←`/`→` or `Tab` switch tabs, `Home`/`End` jump, and `Esc` or `q` closes.
+  A selected row is highlighted but does nothing: the TUI is a viewer, not a
+  file opener.
 - The tab bar's **Git**, **Files**, and **Changes** buttons switch that stack.
   Clicking the active one closes the panel (`layout.hide panel`); clicking
   another selects it (`layout.select panel-body <id>`) and shows the panel. The
@@ -280,10 +290,11 @@ sidebar it drops the labels and keeps the icons.
 `mod.json` is `{"place": "none", "title": "Status (Rotom)"}`. It keeps the
 machine, branch, agent count and palette hint, and inserts **OpenSpec
 Changes** between the branch and the agent count. It imports `spaces, panes,
-focused, agents, theme, run, window, keys, exec, checking` from `herdr` and
-`* as fs from "fs/promises"`. `localRoot(cwd)` walks up to the nearest
-ancestor with an `openspec/config.yaml` file or `openspec/specs` /
-`openspec/changes` directory; `kind(path)` uses `fs.exists` then `fs.readdir`
+focused, agents, theme, run, window, keys, exec, openOverlay, checking, home`
+from `herdr` and `* as fs from "fs/promises"`. `localRoot(cwd)` walks up to
+the nearest ancestor with an `openspec/config.yaml` file or `openspec/specs` /
+`openspec/changes` directory, stopping at the home folder because the mod
+sandbox cannot read above it; `kind(path)` uses `fs.exists` then `fs.readdir`
 because this sandbox has no `stat`. `localNames(root)` reads
 `openspec/changes` and keeps its directories except `archive`.
 `remoteNames(cwd, on)` runs `exec("openspec", ["list", "--json"], {cwd, on})`
@@ -293,7 +304,26 @@ back to the space's folder, and memory for that space when a mod pane has no
 folder), ignores a result whose context has moved on, and runs again every
 10 s. The label uses the shipped
 `workspace-chrome/file-text.svg` at 13 px and a `raised` pill for the count;
-the tooltip lists the open change names.
+the tooltip lists the open change names. Clicking it calls `openOverlay` with
+`mod: "openspec-changes"`, `kind: "dialog"`, `frame: "none"`, `640 × 440`,
+and props `{cwd, on}`.
+
+**`mods/openspec-changes`** (new): the read-only OpenSpec TUI. `mod.json` is
+`{"place": "none", "title": "OpenSpec"}`. It draws its own square border on a
+`popover` background with `settings().font_family`; there is no wrapper
+frame. State is `{tab, at, data, loading, error}`, a `ScrollHandle` for the
+list, and a focus handle for keys. The header is
+`OpenSpec :: <repo> [x]`; the tab bar shows `[ Changes N ]` and `Specs N`
+plus `A active · R archived` (or `N specs`); the footer shows
+`↑↓ scroll · ←→ tabs · esc/q close · read-only`. Rows are 24 px, selected by
+background and a `>` marker, and click only selects. `scan(cwd, on, root)`
+uses `localChanges` + `localSpecs` locally, or two parallel
+`exec("openspec", ...)` calls remotely. `localChanges` lists
+`openspec/changes` except `archive`, then `changes/archive`, newest archive
+name first. `localSpecs` reads each `openspec/specs/<id>/spec.md` and counts
+`### Requirement:` headings; remote `list --specs --json` supplies
+`id` and `requirementCount`. The dialog is read-only: it never writes or
+runs a command for a local repo.
 
 **`mods/git-graph`** (new): `mod.json` is `{"place": "none", "title": "Git"}`.
 `main.js` imports `View, div` from `gpui-kit`; `v_flex, h_flex` from
@@ -344,8 +374,8 @@ Commands it calls: `layout.select`, `layout.show`, `layout.hide`, `space.new`,
 `terminal.keep`, `terminal.copy`, `terminal.paste`, `terminal.right_click`,
 `window.minimize`, `window.maximize`, `window.close`, `agent.next`, `agent.prev`.
 Programs it runs: `git` (the graph), `hc` (`hc send`, `hc machine ls --json`),
-and the shell commands the shipped `spaces` clone already runs for repo/branch
-state.
+`openspec` (the remote OpenSpec count and TUI), and the shell commands the
+shipped `spaces` clone already runs for repo/branch state.
 
 The cloned mods are derived from Herdr's shipped mods (Apache-2.0). If Herdr
 updates `tabs`, `spaces`, `agents`, `files`, `changes`, `menu`, `pane`,
@@ -372,11 +402,13 @@ under `machines.folded.v2`, and `agents-cards` stores section folds under
   than raising the cap.
 - **`git-graph` needs `git` on PATH** and caps the log at 300 commits. It makes
   no network calls and writes no files.
-- **OpenSpec detection is by folder, not Git.** `status-rotom` looks for
-  `openspec/config.yaml`, `openspec/specs` or `openspec/changes` walking up
-  from the active space's folder. An empty `openspec/` is not a root, and a
-  remote space needs `openspec` on that machine's PATH. It only reads; no
-  command runs for a local repo.
+- **OpenSpec detection is by folder, not Git.** `status-rotom` and
+  `openspec-changes` look for `openspec/config.yaml`, `openspec/specs` or
+  `openspec/changes` walking up from the focused pane's folder. An empty
+  `openspec/` is not a root, and a remote space needs `openspec` on that
+  machine's PATH. Both only read; no command runs for a local repo, and the
+  local walk stops at the home folder because the mod sandbox cannot read
+  above it.
 - **Do not overlap the agent cards.** Tucking them under each other with
   `mt(-8)` collapses the list's scroll extent: the panel then clips instead of
   scrolling and no scrollbar appears. Keep them separated like the machine
